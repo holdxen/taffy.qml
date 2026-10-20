@@ -541,5 +541,103 @@ impl From<taffy::GridAutoFlow> for GridAutoFlow {
     }
 }
 
+
+// Defaults match taffy's #[default] variants.
+impl Default for Display {
+    fn default() -> Self {
+        Self::DisplayFlex
+    }
+}
+
+impl Default for BoxGenerationMode {
+    fn default() -> Self {
+        Self::BoxGenerationModeNormal
+    }
+}
+
+impl Default for Position {
+    fn default() -> Self {
+        Self::PositionStatic
+    }
+}
+
+impl Default for BoxSizing {
+    fn default() -> Self {
+        Self::BoxSizingBorderBox
+    }
+}
+
+impl Default for Overflow {
+    fn default() -> Self {
+        Self::OverflowVisible
+    }
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        Self::DirectionLtr
+    }
+}
+
+impl Default for FlexDirection {
+    fn default() -> Self {
+        Self::FlexDirectionRow
+    }
+}
+
+impl Default for FlexWrap {
+    fn default() -> Self {
+        Self::FlexWrapNoWrap
+    }
+}
+
+impl Default for AlignItemsKeyword {
+    fn default() -> Self {
+        Self::AlignItemsKeywordNormal
+    }
+}
+
+impl Default for AlignContentKeyword {
+    fn default() -> Self {
+        Self::AlignContentKeywordNormal
+    }
+}
+
+impl Default for AlignmentSafety {
+    fn default() -> Self {
+        Self::AlignmentSafetyDefault
+    }
+}
+
+impl Default for Float {
+    fn default() -> Self {
+        Self::FloatNone
+    }
+}
+
+impl Default for FloatDirection {
+    fn default() -> Self {
+        Self::FloatDirectionLeft
+    }
+}
+
+impl Default for Clear {
+    fn default() -> Self {
+        Self::ClearNone
+    }
+}
+
+impl Default for TextAlign {
+    fn default() -> Self {
+        Self::TextAlignAuto
+    }
+}
+
+impl Default for GridAutoFlow {
+    fn default() -> Self {
+        Self::GridAutoFlowRow
+    }
+}
+
 #[derive(Default)]
 pub struct TaffyTypeRust;
