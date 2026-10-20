@@ -1,0 +1,8 @@
+build/
+target/
+rust/target/
+cmake-build-*/
+.idea/
+.vscode/
+.DS_Store
+*.user
