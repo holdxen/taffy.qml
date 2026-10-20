@@ -9,6 +9,6 @@ fn main() {
         .qt_module("Gui")
         .qt_module("Qml")
         .qt_module("Quick")
-        .file("src/layout_engine.rs")
+        .file("src/utils.rs")
         .build();
 }
