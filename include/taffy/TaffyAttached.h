@@ -1,16 +1,9 @@
-//
-// Created by zhouguiqing on 2026/10/20.
-//
-
-
-
 #pragma once
 
-
-#include <QtQml/qqmlintegration.h>
-
 #include <QObject>
-
+// QML_ELEMENT etc. Live in QtQml on this Qt install.
+// Note: <QtQml/qqmlintegration.h> is NOT in the QtQml framework (it's QtQmlIntegration).
+#include <QtQml/qqmlregistration.h>
 
 class TaffyAttached : public QObject
 {
