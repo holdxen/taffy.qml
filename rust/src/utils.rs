@@ -1,6 +1,9 @@
 // Style enums bridged from the taffy crate to Qt/QML via cxx-qt.
 // Naming: enum name prefixes every variant (see FlexDirection::FlexDirectionRow).
 
+// Re-export so the bridge can refer to `super::TaffyLayoutRust`.
+pub use crate::layout::TaffyLayoutRust;
+
 use crate::utils::ffi::{
     AlignContentKeyword,
     AlignItemsKeyword,
@@ -156,11 +159,32 @@ pub mod ffi {
         GridAutoFlowColumnDense,
     }
 
+    unsafe extern "C++Qt" {
+        include!(<QtQuick/QQuickItem>);
+        /// Base for the layout item
+        #[qobject]
+        type QQuickItem;
+    }
+
     extern "RustQt" {
         #[qobject]
         #[qml_element]
         type TaffyType = super::TaffyTypeRust;
+
+        #[qobject]
+        #[base = QQuickItem]
+        #[qml_element]
+        #[qproperty(Display, display)]
+        #[qproperty(FlexDirection, flex_direction)]
+        #[qproperty(FlexWrap, flex_wrap)]
+        #[qproperty(AlignItemsKeyword, align_items)]
+        #[qproperty(AlignContentKeyword, justify_content)]
+        #[qproperty(AlignContentKeyword, align_content)]
+        type TaffyLayout = super::TaffyLayoutRust;
     }
+
+    impl cxx_qt::Initialize for TaffyLayout {}
+
 }
 
 impl From<Display> for taffy::Display {
@@ -636,6 +660,12 @@ impl Default for TextAlign {
 impl Default for GridAutoFlow {
     fn default() -> Self {
         Self::GridAutoFlowRow
+    }
+}
+
+impl cxx_qt::Initialize for ffi::TaffyLayout {
+    fn initialize(self: core::pin::Pin<&mut Self>) {
+        // QQuickItem base is initialized by Qt.
     }
 }
 
