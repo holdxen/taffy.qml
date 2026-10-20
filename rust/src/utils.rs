@@ -24,7 +24,7 @@ use crate::utils::ffi::{
 pub mod ffi {
 
     #[qenum(TaffyType)]
-    enum Display {
+    pub enum Display {
         DisplayBlock,
         DisplayFlowRoot,
         DisplayFlex,
@@ -33,13 +33,13 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum BoxGenerationMode {
+    pub enum BoxGenerationMode {
         BoxGenerationModeNormal,
         BoxGenerationModeNone,
     }
 
     #[qenum(TaffyType)]
-    enum Position {
+    pub enum Position {
         PositionStatic,
         PositionRelative,
         PositionAbsolute,
@@ -48,13 +48,13 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum BoxSizing {
+    pub enum BoxSizing {
         BoxSizingBorderBox,
         BoxSizingContentBox,
     }
 
     #[qenum(TaffyType)]
-    enum Overflow {
+    pub enum Overflow {
         OverflowVisible,
         OverflowClip,
         OverflowHidden,
@@ -62,13 +62,13 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum Direction {
+    pub enum Direction {
         DirectionLtr,
         DirectionRtl,
     }
 
     #[qenum(TaffyType)]
-    enum FlexDirection {
+    pub enum FlexDirection {
         FlexDirectionRow,
         FlexDirectionColumn,
         FlexDirectionRowReverse,
@@ -76,7 +76,7 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum FlexWrap {
+    pub enum FlexWrap {
         FlexWrapNoWrap,
         FlexWrapWrap,
         FlexWrapWrapReverse,
@@ -85,7 +85,7 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum AlignItemsKeyword {
+    pub enum AlignItemsKeyword {
         AlignItemsKeywordNormal,
         AlignItemsKeywordStart,
         AlignItemsKeywordEnd,
@@ -99,7 +99,7 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum AlignContentKeyword {
+    pub enum AlignContentKeyword {
         AlignContentKeywordNormal,
         AlignContentKeywordStart,
         AlignContentKeywordEnd,
@@ -113,27 +113,27 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum AlignmentSafety {
+    pub enum AlignmentSafety {
         AlignmentSafetyDefault,
         AlignmentSafetyUnsafe,
         AlignmentSafetySafe,
     }
 
     #[qenum(TaffyType)]
-    enum Float {
+    pub enum Float {
         FloatLeft,
         FloatRight,
         FloatNone,
     }
 
     #[qenum(TaffyType)]
-    enum FloatDirection {
+    pub enum FloatDirection {
         FloatDirectionLeft,
         FloatDirectionRight,
     }
 
     #[qenum(TaffyType)]
-    enum Clear {
+    pub enum Clear {
         ClearLeft,
         ClearRight,
         ClearBoth,
@@ -141,7 +141,7 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum TextAlign {
+    pub enum TextAlign {
         TextAlignAuto,
         TextAlignLegacyLeft,
         TextAlignLegacyRight,
@@ -149,7 +149,7 @@ pub mod ffi {
     }
 
     #[qenum(TaffyType)]
-    enum GridAutoFlow {
+    pub enum GridAutoFlow {
         GridAutoFlowRow,
         GridAutoFlowColumn,
         GridAutoFlowRowDense,
