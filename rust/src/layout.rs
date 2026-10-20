@@ -1,5 +1,8 @@
-use taffy::{AlignContent, AlignItems, Display, FlexDirection, FlexWrap, JustifyContent, Size};
+// use taffy::{AlignContent, AlignItems, Display, FlexDirection, FlexWrap, JustifyContent, Size};
+// use taffy::{AlignContent, AlignItems, Display, FlexDirection, FlexWrap, JustifyContent, Size};
 
+
+pub use super::utils::ffi::*;
 
 #[derive(Default)]
 pub struct TaffyLayoutRust {
@@ -8,9 +11,9 @@ pub struct TaffyLayoutRust {
     flex_wrap: FlexWrap,
     flex_line_count: u16,
 
-    justify_content: JustifyContent,
-    align_items: AlignItems,
-    align_content: AlignContent,
+    justify_content: AlignContentKeyword,
+    align_items: AlignItemsKeyword,
+    align_content: AlignContentKeyword,
 }
 
 // impl Default for TaffyLayoutRust {
@@ -34,6 +37,7 @@ pub mod ffi {
         #[qobject]
         #[base = QQuickItem]
         #[qml_element]
+        #[qproperty(Display, display)]
         type TaffyLayout = super::TaffyLayoutRust;
     }
 
