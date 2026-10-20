@@ -1,7 +1,71 @@
-use crate::utils::ffi::FlexDirection;
+// Style enums bridged from the taffy crate to Qt/QML via cxx-qt.
+// Naming: enum name prefixes every variant (see FlexDirection::FlexDirectionRow).
+
+use crate::utils::ffi::{
+    AlignContentKeyword,
+    AlignItemsKeyword,
+    AlignmentSafety,
+    BoxGenerationMode,
+    BoxSizing,
+    Clear,
+    Direction,
+    Display,
+    FlexDirection,
+    FlexWrap,
+    Float,
+    FloatDirection,
+    GridAutoFlow,
+    Overflow,
+    Position,
+    TextAlign,
+};
 
 #[cxx_qt::bridge]
 pub mod ffi {
+
+    #[qenum(TaffyType)]
+    enum Display {
+        DisplayBlock,
+        DisplayFlowRoot,
+        DisplayFlex,
+        DisplayGrid,
+        DisplayNone,
+    }
+
+    #[qenum(TaffyType)]
+    enum BoxGenerationMode {
+        BoxGenerationModeNormal,
+        BoxGenerationModeNone,
+    }
+
+    #[qenum(TaffyType)]
+    enum Position {
+        PositionStatic,
+        PositionRelative,
+        PositionAbsolute,
+        PositionFixed,
+        PositionSticky,
+    }
+
+    #[qenum(TaffyType)]
+    enum BoxSizing {
+        BoxSizingBorderBox,
+        BoxSizingContentBox,
+    }
+
+    #[qenum(TaffyType)]
+    enum Overflow {
+        OverflowVisible,
+        OverflowClip,
+        OverflowHidden,
+        OverflowScroll,
+    }
+
+    #[qenum(TaffyType)]
+    enum Direction {
+        DirectionLtr,
+        DirectionRtl,
+    }
 
     #[qenum(TaffyType)]
     enum FlexDirection {
@@ -11,6 +75,87 @@ pub mod ffi {
         FlexDirectionColumnReverse,
     }
 
+    #[qenum(TaffyType)]
+    enum FlexWrap {
+        FlexWrapNoWrap,
+        FlexWrapWrap,
+        FlexWrapWrapReverse,
+        FlexWrapBalance,
+        FlexWrapBalanceReverse,
+    }
+
+    #[qenum(TaffyType)]
+    enum AlignItemsKeyword {
+        AlignItemsKeywordNormal,
+        AlignItemsKeywordStart,
+        AlignItemsKeywordEnd,
+        AlignItemsKeywordFlexStart,
+        AlignItemsKeywordFlexEnd,
+        AlignItemsKeywordSelfStart,
+        AlignItemsKeywordSelfEnd,
+        AlignItemsKeywordCenter,
+        AlignItemsKeywordBaseline,
+        AlignItemsKeywordStretch,
+    }
+
+    #[qenum(TaffyType)]
+    enum AlignContentKeyword {
+        AlignContentKeywordNormal,
+        AlignContentKeywordStart,
+        AlignContentKeywordEnd,
+        AlignContentKeywordFlexStart,
+        AlignContentKeywordFlexEnd,
+        AlignContentKeywordCenter,
+        AlignContentKeywordStretch,
+        AlignContentKeywordSpaceBetween,
+        AlignContentKeywordSpaceEvenly,
+        AlignContentKeywordSpaceAround,
+    }
+
+    #[qenum(TaffyType)]
+    enum AlignmentSafety {
+        AlignmentSafetyDefault,
+        AlignmentSafetyUnsafe,
+        AlignmentSafetySafe,
+    }
+
+    #[qenum(TaffyType)]
+    enum Float {
+        FloatLeft,
+        FloatRight,
+        FloatNone,
+    }
+
+    #[qenum(TaffyType)]
+    enum FloatDirection {
+        FloatDirectionLeft,
+        FloatDirectionRight,
+    }
+
+    #[qenum(TaffyType)]
+    enum Clear {
+        ClearLeft,
+        ClearRight,
+        ClearBoth,
+        ClearNone,
+    }
+
+    #[qenum(TaffyType)]
+    enum TextAlign {
+        TextAlignAuto,
+        TextAlignLegacyLeft,
+        TextAlignLegacyRight,
+        TextAlignLegacyCenter,
+    }
+
+    #[qenum(TaffyType)]
+    enum GridAutoFlow {
+        GridAutoFlowRow,
+        GridAutoFlowColumn,
+        GridAutoFlowRowDense,
+        GridAutoFlowColumnDense,
+    }
+
     extern "RustQt" {
         #[qobject]
         #[qml_element]
@@ -18,19 +163,147 @@ pub mod ffi {
     }
 }
 
-
-impl From<FlexDirection> for taffy::FlexDirection {
-    fn from(value: FlexDirection) -> Self {
+impl From<Display> for taffy::Display {
+    fn from(value: Display) -> Self {
         match value {
-            FlexDirection::FlexDirectionColumn => taffy::FlexDirection::Column,
-            FlexDirection::FlexDirectionColumnReverse => taffy::FlexDirection::ColumnReverse,
-            FlexDirection::FlexDirectionRow => taffy::FlexDirection::Row,
-            FlexDirection::FlexDirectionRowReverse => taffy::FlexDirection::RowReverse,
+            Display::DisplayBlock => taffy::Display::Block,
+            Display::DisplayFlowRoot => taffy::Display::FlowRoot,
+            Display::DisplayFlex => taffy::Display::Flex,
+            Display::DisplayGrid => taffy::Display::Grid,
+            Display::DisplayNone => taffy::Display::None,
             _ => Default::default()
         }
     }
 }
 
+impl From<taffy::Display> for Display {
+    fn from(value: taffy::Display) -> Self {
+        match value {
+            taffy::Display::Block => Self::DisplayBlock,
+            taffy::Display::FlowRoot => Self::DisplayFlowRoot,
+            taffy::Display::Flex => Self::DisplayFlex,
+            taffy::Display::Grid => Self::DisplayGrid,
+            taffy::Display::None => Self::DisplayNone
+        }
+    }
+}
+
+impl From<BoxGenerationMode> for taffy::BoxGenerationMode {
+    fn from(value: BoxGenerationMode) -> Self {
+        match value {
+            BoxGenerationMode::BoxGenerationModeNormal => taffy::BoxGenerationMode::Normal,
+            BoxGenerationMode::BoxGenerationModeNone => taffy::BoxGenerationMode::None,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::BoxGenerationMode> for BoxGenerationMode {
+    fn from(value: taffy::BoxGenerationMode) -> Self {
+        match value {
+            taffy::BoxGenerationMode::Normal => Self::BoxGenerationModeNormal,
+            taffy::BoxGenerationMode::None => Self::BoxGenerationModeNone
+        }
+    }
+}
+
+impl From<Position> for taffy::Position {
+    fn from(value: Position) -> Self {
+        match value {
+            Position::PositionStatic => taffy::Position::Static,
+            Position::PositionRelative => taffy::Position::Relative,
+            Position::PositionAbsolute => taffy::Position::Absolute,
+            Position::PositionFixed => taffy::Position::Fixed,
+            Position::PositionSticky => taffy::Position::Sticky,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::Position> for Position {
+    fn from(value: taffy::Position) -> Self {
+        match value {
+            taffy::Position::Static => Self::PositionStatic,
+            taffy::Position::Relative => Self::PositionRelative,
+            taffy::Position::Absolute => Self::PositionAbsolute,
+            taffy::Position::Fixed => Self::PositionFixed,
+            taffy::Position::Sticky => Self::PositionSticky
+        }
+    }
+}
+
+impl From<BoxSizing> for taffy::BoxSizing {
+    fn from(value: BoxSizing) -> Self {
+        match value {
+            BoxSizing::BoxSizingBorderBox => taffy::BoxSizing::BorderBox,
+            BoxSizing::BoxSizingContentBox => taffy::BoxSizing::ContentBox,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::BoxSizing> for BoxSizing {
+    fn from(value: taffy::BoxSizing) -> Self {
+        match value {
+            taffy::BoxSizing::BorderBox => Self::BoxSizingBorderBox,
+            taffy::BoxSizing::ContentBox => Self::BoxSizingContentBox
+        }
+    }
+}
+
+impl From<Overflow> for taffy::Overflow {
+    fn from(value: Overflow) -> Self {
+        match value {
+            Overflow::OverflowVisible => taffy::Overflow::Visible,
+            Overflow::OverflowClip => taffy::Overflow::Clip,
+            Overflow::OverflowHidden => taffy::Overflow::Hidden,
+            Overflow::OverflowScroll => taffy::Overflow::Scroll,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::Overflow> for Overflow {
+    fn from(value: taffy::Overflow) -> Self {
+        match value {
+            taffy::Overflow::Visible => Self::OverflowVisible,
+            taffy::Overflow::Clip => Self::OverflowClip,
+            taffy::Overflow::Hidden => Self::OverflowHidden,
+            taffy::Overflow::Scroll => Self::OverflowScroll
+        }
+    }
+}
+
+impl From<Direction> for taffy::Direction {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::DirectionLtr => taffy::Direction::Ltr,
+            Direction::DirectionRtl => taffy::Direction::Rtl,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::Direction> for Direction {
+    fn from(value: taffy::Direction) -> Self {
+        match value {
+            taffy::Direction::Ltr => Self::DirectionLtr,
+            taffy::Direction::Rtl => Self::DirectionRtl
+        }
+    }
+}
+
+impl From<FlexDirection> for taffy::FlexDirection {
+    fn from(value: FlexDirection) -> Self {
+        match value {
+            FlexDirection::FlexDirectionRow => taffy::FlexDirection::Row,
+            FlexDirection::FlexDirectionColumn => taffy::FlexDirection::Column,
+            FlexDirection::FlexDirectionRowReverse => taffy::FlexDirection::RowReverse,
+            FlexDirection::FlexDirectionColumnReverse => taffy::FlexDirection::ColumnReverse,
+            _ => Default::default()
+        }
+    }
+}
 
 impl From<taffy::FlexDirection> for FlexDirection {
     fn from(value: taffy::FlexDirection) -> Self {
@@ -43,6 +316,230 @@ impl From<taffy::FlexDirection> for FlexDirection {
     }
 }
 
+impl From<FlexWrap> for taffy::FlexWrap {
+    fn from(value: FlexWrap) -> Self {
+        match value {
+            FlexWrap::FlexWrapNoWrap => taffy::FlexWrap::NoWrap,
+            FlexWrap::FlexWrapWrap => taffy::FlexWrap::Wrap,
+            FlexWrap::FlexWrapWrapReverse => taffy::FlexWrap::WrapReverse,
+            FlexWrap::FlexWrapBalance => taffy::FlexWrap::Balance,
+            FlexWrap::FlexWrapBalanceReverse => taffy::FlexWrap::BalanceReverse,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::FlexWrap> for FlexWrap {
+    fn from(value: taffy::FlexWrap) -> Self {
+        match value {
+            taffy::FlexWrap::NoWrap => Self::FlexWrapNoWrap,
+            taffy::FlexWrap::Wrap => Self::FlexWrapWrap,
+            taffy::FlexWrap::WrapReverse => Self::FlexWrapWrapReverse,
+            taffy::FlexWrap::Balance => Self::FlexWrapBalance,
+            taffy::FlexWrap::BalanceReverse => Self::FlexWrapBalanceReverse
+        }
+    }
+}
+
+impl From<AlignItemsKeyword> for taffy::AlignItemsKeyword {
+    fn from(value: AlignItemsKeyword) -> Self {
+        match value {
+            AlignItemsKeyword::AlignItemsKeywordNormal => taffy::AlignItemsKeyword::Normal,
+            AlignItemsKeyword::AlignItemsKeywordStart => taffy::AlignItemsKeyword::Start,
+            AlignItemsKeyword::AlignItemsKeywordEnd => taffy::AlignItemsKeyword::End,
+            AlignItemsKeyword::AlignItemsKeywordFlexStart => taffy::AlignItemsKeyword::FlexStart,
+            AlignItemsKeyword::AlignItemsKeywordFlexEnd => taffy::AlignItemsKeyword::FlexEnd,
+            AlignItemsKeyword::AlignItemsKeywordSelfStart => taffy::AlignItemsKeyword::SelfStart,
+            AlignItemsKeyword::AlignItemsKeywordSelfEnd => taffy::AlignItemsKeyword::SelfEnd,
+            AlignItemsKeyword::AlignItemsKeywordCenter => taffy::AlignItemsKeyword::Center,
+            AlignItemsKeyword::AlignItemsKeywordBaseline => taffy::AlignItemsKeyword::Baseline,
+            AlignItemsKeyword::AlignItemsKeywordStretch => taffy::AlignItemsKeyword::Stretch,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::AlignItemsKeyword> for AlignItemsKeyword {
+    fn from(value: taffy::AlignItemsKeyword) -> Self {
+        match value {
+            taffy::AlignItemsKeyword::Normal => Self::AlignItemsKeywordNormal,
+            taffy::AlignItemsKeyword::Start => Self::AlignItemsKeywordStart,
+            taffy::AlignItemsKeyword::End => Self::AlignItemsKeywordEnd,
+            taffy::AlignItemsKeyword::FlexStart => Self::AlignItemsKeywordFlexStart,
+            taffy::AlignItemsKeyword::FlexEnd => Self::AlignItemsKeywordFlexEnd,
+            taffy::AlignItemsKeyword::SelfStart => Self::AlignItemsKeywordSelfStart,
+            taffy::AlignItemsKeyword::SelfEnd => Self::AlignItemsKeywordSelfEnd,
+            taffy::AlignItemsKeyword::Center => Self::AlignItemsKeywordCenter,
+            taffy::AlignItemsKeyword::Baseline => Self::AlignItemsKeywordBaseline,
+            taffy::AlignItemsKeyword::Stretch => Self::AlignItemsKeywordStretch
+        }
+    }
+}
+
+impl From<AlignContentKeyword> for taffy::AlignContentKeyword {
+    fn from(value: AlignContentKeyword) -> Self {
+        match value {
+            AlignContentKeyword::AlignContentKeywordNormal => taffy::AlignContentKeyword::Normal,
+            AlignContentKeyword::AlignContentKeywordStart => taffy::AlignContentKeyword::Start,
+            AlignContentKeyword::AlignContentKeywordEnd => taffy::AlignContentKeyword::End,
+            AlignContentKeyword::AlignContentKeywordFlexStart => taffy::AlignContentKeyword::FlexStart,
+            AlignContentKeyword::AlignContentKeywordFlexEnd => taffy::AlignContentKeyword::FlexEnd,
+            AlignContentKeyword::AlignContentKeywordCenter => taffy::AlignContentKeyword::Center,
+            AlignContentKeyword::AlignContentKeywordStretch => taffy::AlignContentKeyword::Stretch,
+            AlignContentKeyword::AlignContentKeywordSpaceBetween => taffy::AlignContentKeyword::SpaceBetween,
+            AlignContentKeyword::AlignContentKeywordSpaceEvenly => taffy::AlignContentKeyword::SpaceEvenly,
+            AlignContentKeyword::AlignContentKeywordSpaceAround => taffy::AlignContentKeyword::SpaceAround,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::AlignContentKeyword> for AlignContentKeyword {
+    fn from(value: taffy::AlignContentKeyword) -> Self {
+        match value {
+            taffy::AlignContentKeyword::Normal => Self::AlignContentKeywordNormal,
+            taffy::AlignContentKeyword::Start => Self::AlignContentKeywordStart,
+            taffy::AlignContentKeyword::End => Self::AlignContentKeywordEnd,
+            taffy::AlignContentKeyword::FlexStart => Self::AlignContentKeywordFlexStart,
+            taffy::AlignContentKeyword::FlexEnd => Self::AlignContentKeywordFlexEnd,
+            taffy::AlignContentKeyword::Center => Self::AlignContentKeywordCenter,
+            taffy::AlignContentKeyword::Stretch => Self::AlignContentKeywordStretch,
+            taffy::AlignContentKeyword::SpaceBetween => Self::AlignContentKeywordSpaceBetween,
+            taffy::AlignContentKeyword::SpaceEvenly => Self::AlignContentKeywordSpaceEvenly,
+            taffy::AlignContentKeyword::SpaceAround => Self::AlignContentKeywordSpaceAround
+        }
+    }
+}
+
+impl From<AlignmentSafety> for taffy::AlignmentSafety {
+    fn from(value: AlignmentSafety) -> Self {
+        match value {
+            AlignmentSafety::AlignmentSafetyDefault => taffy::AlignmentSafety::Default,
+            AlignmentSafety::AlignmentSafetyUnsafe => taffy::AlignmentSafety::Unsafe,
+            AlignmentSafety::AlignmentSafetySafe => taffy::AlignmentSafety::Safe,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::AlignmentSafety> for AlignmentSafety {
+    fn from(value: taffy::AlignmentSafety) -> Self {
+        match value {
+            taffy::AlignmentSafety::Default => Self::AlignmentSafetyDefault,
+            taffy::AlignmentSafety::Unsafe => Self::AlignmentSafetyUnsafe,
+            taffy::AlignmentSafety::Safe => Self::AlignmentSafetySafe
+        }
+    }
+}
+
+impl From<Float> for taffy::Float {
+    fn from(value: Float) -> Self {
+        match value {
+            Float::FloatLeft => taffy::Float::Left,
+            Float::FloatRight => taffy::Float::Right,
+            Float::FloatNone => taffy::Float::None,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::Float> for Float {
+    fn from(value: taffy::Float) -> Self {
+        match value {
+            taffy::Float::Left => Self::FloatLeft,
+            taffy::Float::Right => Self::FloatRight,
+            taffy::Float::None => Self::FloatNone
+        }
+    }
+}
+
+impl From<FloatDirection> for taffy::FloatDirection {
+    fn from(value: FloatDirection) -> Self {
+        match value {
+            FloatDirection::FloatDirectionLeft => taffy::FloatDirection::Left,
+            FloatDirection::FloatDirectionRight => taffy::FloatDirection::Right,
+            _ => taffy::FloatDirection::Left
+        }
+    }
+}
+
+impl From<taffy::FloatDirection> for FloatDirection {
+    fn from(value: taffy::FloatDirection) -> Self {
+        match value {
+            taffy::FloatDirection::Left => Self::FloatDirectionLeft,
+            taffy::FloatDirection::Right => Self::FloatDirectionRight
+        }
+    }
+}
+
+impl From<Clear> for taffy::Clear {
+    fn from(value: Clear) -> Self {
+        match value {
+            Clear::ClearLeft => taffy::Clear::Left,
+            Clear::ClearRight => taffy::Clear::Right,
+            Clear::ClearBoth => taffy::Clear::Both,
+            Clear::ClearNone => taffy::Clear::None,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::Clear> for Clear {
+    fn from(value: taffy::Clear) -> Self {
+        match value {
+            taffy::Clear::Left => Self::ClearLeft,
+            taffy::Clear::Right => Self::ClearRight,
+            taffy::Clear::Both => Self::ClearBoth,
+            taffy::Clear::None => Self::ClearNone
+        }
+    }
+}
+
+impl From<TextAlign> for taffy::TextAlign {
+    fn from(value: TextAlign) -> Self {
+        match value {
+            TextAlign::TextAlignAuto => taffy::TextAlign::Auto,
+            TextAlign::TextAlignLegacyLeft => taffy::TextAlign::LegacyLeft,
+            TextAlign::TextAlignLegacyRight => taffy::TextAlign::LegacyRight,
+            TextAlign::TextAlignLegacyCenter => taffy::TextAlign::LegacyCenter,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::TextAlign> for TextAlign {
+    fn from(value: taffy::TextAlign) -> Self {
+        match value {
+            taffy::TextAlign::Auto => Self::TextAlignAuto,
+            taffy::TextAlign::LegacyLeft => Self::TextAlignLegacyLeft,
+            taffy::TextAlign::LegacyRight => Self::TextAlignLegacyRight,
+            taffy::TextAlign::LegacyCenter => Self::TextAlignLegacyCenter
+        }
+    }
+}
+
+impl From<GridAutoFlow> for taffy::GridAutoFlow {
+    fn from(value: GridAutoFlow) -> Self {
+        match value {
+            GridAutoFlow::GridAutoFlowRow => taffy::GridAutoFlow::Row,
+            GridAutoFlow::GridAutoFlowColumn => taffy::GridAutoFlow::Column,
+            GridAutoFlow::GridAutoFlowRowDense => taffy::GridAutoFlow::RowDense,
+            GridAutoFlow::GridAutoFlowColumnDense => taffy::GridAutoFlow::ColumnDense,
+            _ => Default::default()
+        }
+    }
+}
+
+impl From<taffy::GridAutoFlow> for GridAutoFlow {
+    fn from(value: taffy::GridAutoFlow) -> Self {
+        match value {
+            taffy::GridAutoFlow::Row => Self::GridAutoFlowRow,
+            taffy::GridAutoFlow::Column => Self::GridAutoFlowColumn,
+            taffy::GridAutoFlow::RowDense => Self::GridAutoFlowRowDense,
+            taffy::GridAutoFlow::ColumnDense => Self::GridAutoFlowColumnDense
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct TaffyTypeRust;
