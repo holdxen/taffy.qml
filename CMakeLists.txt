@@ -79,8 +79,10 @@ cxx_qt_import_crate(
 add_library(taffy
     cpp/Taffy.cpp
     cpp/TaffyItem.cpp
+    cpp/TaffyAttached.cpp
     include/taffy/Taffy.h
     include/taffy/TaffyItem.h
+    include/taffy/TaffyAttached.h
 )
 add_library(taffy::taffy ALIAS taffy)
 
