@@ -9,21 +9,20 @@ ApplicationWindow {
     visible: true
     title: qsTr("taffy minimal example")
 
-    Column {
-        anchors.centerIn: parent
-        spacing: 12
+    TaffyItem {
+        anchors.fill: parent
+        anchors.margins: 24
+        display: TaffyTypes.DisplayFlex
+        flexDirection: TaffyTypes.FlexDirectionColumn
+        color: "#3b82f6"
 
-        TaffyItem {
-            width: 240
-            height: 80
-            mode: LayoutEngine.Flex
-            spacing: 8
-            color: "#3b82f6"
+        Rectangle {
+            width: 200; height: 40
+            color: "#22c55e"
         }
-
-        Label {
-            text: qsTr("TaffyItem with Rust layout engine")
-            anchors.horizontalCenter: parent.horizontalCenter
+        Rectangle {
+            width: 200; height: 40
+            color: "#f59e0b"
         }
     }
 }

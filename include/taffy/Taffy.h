@@ -4,10 +4,7 @@
 
 namespace taffy {
 
-/**
- * Register taffy QML types under URI "Taffy" 1.0.
- * Call once before loading any QML that uses them.
- */
+/** Register taffy QML types under URI "Taffy" 1.0. */
 void registerQmlTypes();
 
 } // namespace taffy
