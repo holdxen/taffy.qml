@@ -14,13 +14,8 @@
 cmake_minimum_required(VERSION 3.24)
 project(taffy_example_minimal LANGUAGES CXX)
 
-find_package(Qt6 QUIET COMPONENTS Core Gui Qml Quick QuickControls2)
-if(NOT Qt6_FOUND)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
-    set(QT_PACKAGE Qt5)
-else()
-    set(QT_PACKAGE Qt6)
-endif()
+# Qt 6 only
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
 
 add_executable(taffy_example_minimal
     main.cpp
@@ -29,11 +24,11 @@ add_executable(taffy_example_minimal
 
 target_link_libraries(taffy_example_minimal PRIVATE
     taffy::taffy
-    ${QT_PACKAGE}::Core
-    ${QT_PACKAGE}::Gui
-    ${QT_PACKAGE}::Qml
-    ${QT_PACKAGE}::Quick
-    ${QT_PACKAGE}::QuickControls2
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Qml
+    Qt6::Quick
+    Qt6::QuickControls2
 )
 
 # Make main.qml visible to the engine without a full qrc for the skeleton.
