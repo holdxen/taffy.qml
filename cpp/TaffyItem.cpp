@@ -86,9 +86,9 @@ void TaffyItem::relayout()
                       m_display,
                       m_flexDirection,
                       FlexWrap::NoWrap,
-                      AlignItemsKeyword::Stretch,
-                      AlignContentKeyword::Normal,
-                      AlignContentKeyword::Normal,
+                      AlignItems::Stretch,
+                      AlignContent::Normal,
+                      AlignContent::Normal,
                       width(), height());
 
     const auto kids = childItems();
@@ -100,9 +100,9 @@ void TaffyItem::relayout()
                           Display::Flex,
                           FlexDirection::Row,
                           FlexWrap::NoWrap,
-                          AlignItemsKeyword::Normal,
-                          AlignContentKeyword::Normal,
-                          AlignContentKeyword::Normal,
+                          AlignItems::Normal,
+                          AlignContent::Normal,
+                          AlignContent::Normal,
                           w > 0 ? w : 100.0,
                           h > 0 ? h : 40.0);
         m_engine.addChild(root, child);

@@ -90,9 +90,9 @@ public:
                   Display display,
                   FlexDirection flexDirection,
                   FlexWrap flexWrap,
-                  AlignItemsKeyword alignItems,
-                  AlignContentKeyword alignContent,
-                  AlignContentKeyword justifyContent,
+                  AlignItems alignItems,
+                  AlignContent alignContent,
+                  AlignContent justifyContent,
                   qreal width, qreal height,
                   qreal flexGrow = 0.0, qreal flexShrink = 1.0);
     bool compute(const AvailableSpace& width, const AvailableSpace& height);
