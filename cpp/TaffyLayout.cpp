@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <cmath>
 
+#include <QtQml/qqml.h>
+#include <QtQuick/private/qquickanchors_p.h>
+#include <QtQuick/private/qquickitem_p.h>
+
 class TaffyLayoutPrivate : public QQuickLayoutPrivate
 {
 public:
@@ -62,6 +66,12 @@ void TaffyLayout::onItemStyleChanged()
 void TaffyLayout::componentComplete()
 {
     QQuickLayout::componentComplete();
+    const int n = itemCount();
+    for (int i = 0; i < n; ++i) {
+        QQuickItem* child = itemAt(i);
+        watchItemStyle(child);
+        checkAnchors(child);
+    }
     // First layout, same as QQuickFlexboxLayout: skip if a parent layout will drive us.
     if (qobject_cast<QQuickLayout*>(parentItem())) {
         return;
@@ -157,6 +167,14 @@ qreal TaffyLayout::gapWidth() const
 {
     return m_gapWidth;
 }
+void TaffyLayout::resetGapWidth()
+{
+    if (qFuzzyCompare(m_gapWidth, 0.0))
+        return;
+    m_gapWidth = 0.0;
+    emit styleChanged();
+    invalidate();
+}
 void TaffyLayout::setGapWidth(qreal v)
 {
     if (qFuzzyCompare(m_gapWidth, v))
@@ -168,6 +186,14 @@ void TaffyLayout::setGapWidth(qreal v)
 qreal TaffyLayout::gapHeight() const
 {
     return m_gapHeight;
+}
+void TaffyLayout::resetGapHeight()
+{
+    if (qFuzzyCompare(m_gapHeight, 0.0))
+        return;
+    m_gapHeight = 0.0;
+    emit styleChanged();
+    invalidate();
 }
 void TaffyLayout::setGapHeight(qreal v)
 {
@@ -468,9 +494,35 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     return s;
 }
 
+void TaffyLayout::invalidate(QQuickItem* childItem)
+{
+    m_sizeHintsDirty = true;
+    QQuickLayout::invalidate(childItem);
+}
+
 void TaffyLayout::updateLayoutItems()
 {
     invalidate();
+}
+
+void TaffyLayout::checkAnchors(QQuickItem* item) const
+{
+    if (!item) {
+        return;
+    }
+    QQuickAnchors* anchors = QQuickItemPrivate::get(item)->_anchors;
+    if (anchors && anchors->activeDirections()) {
+        qmlWarning(item) << "Detected anchors on an item that is managed by a layout."
+                            " This is undefined behavior; use TaffyLayout properties instead.";
+    }
+}
+
+void TaffyLayout::itemSiblingOrderChanged(QQuickItem* item)
+{
+    if (!isReady())
+        return;
+    // childItems() order is the layout order — just rebuild.
+    invalidate(item);
 }
 
 void TaffyLayout::itemChange(ItemChange change, const ItemChangeData& value)
@@ -479,6 +531,7 @@ void TaffyLayout::itemChange(ItemChange change, const ItemChangeData& value)
     if (change == ItemChildAddedChange) {
         if (value.item) {
             watchItemStyle(value.item);
+            checkAnchors(value.item);
         }
         invalidate();
     } else if (change == ItemChildRemovedChange || change == ItemVisibleHasChanged) {
@@ -525,34 +578,74 @@ void TaffyLayout::setStretchFactor(QQuickItem* item, int stretchFactor, Qt::Orie
     Q_UNUSED(orient);
 }
 
+void TaffyLayout::applyChildGeometry(QQuickItem* child, const taffy::Layout& l)
+{
+    const QSizeF oldSize = child->size();
+    const QSizeF newSize(l.size.width, l.size.height);
+
+    if (oldSize == newSize) {
+        child->setPosition(QPointF(l.location.x, l.location.y));
+        // Nested layout: size unchanged but it may still need to rearrange.
+        if (auto* layout = qobject_cast<QQuickLayout*>(child)) {
+            if (layout->invalidatedArrangement()) {
+                layout->rearrange(newSize);
+            }
+        }
+    } else {
+        child->setPosition(QPointF(l.location.x, l.location.y));
+        child->setSize(newSize);
+    }
+}
+
 QSizeF TaffyLayout::sizeHint(Qt::SizeHint whichSizeHint) const
 {
-    m_engine.clear();
-    const unsigned root = m_engine.addNode(containerStyle(QSizeF()));
+    const int idx = int(whichSizeHint);
+    if (idx >= 0 && idx < Qt::NSizeHints && !m_sizeHintsDirty) {
+        return m_cachedSizeHints[idx];
+    }
+
     const int n = itemCount();
     for (int i = 0; i < n; ++i) {
-        QQuickItem* child = itemAt(i);
-        const unsigned node = m_engine.addNode(itemStyle(child));
-        m_engine.addChild(root, node);
+        watchItemStyle(itemAt(i));
+        checkAnchors(itemAt(i));
     }
 
-    switch (whichSizeHint) {
-    case Qt::MinimumSize:
-        m_engine.compute(taffy::AvailableSpace::minContent(), taffy::AvailableSpace::minContent());
-        break;
-    case Qt::MaximumSize:
-        m_engine.compute(taffy::AvailableSpace::maxContent(), taffy::AvailableSpace::maxContent());
-        break;
-    default:
-        m_engine.compute(taffy::AvailableSpace::maxContent(), taffy::AvailableSpace::minContent());
-        break;
+    // Fill all three hints so the cache is complete.
+    static const Qt::SizeHint kAll[] = { Qt::MinimumSize, Qt::PreferredSize, Qt::MaximumSize };
+    for (Qt::SizeHint which : kAll) {
+        m_engine.clear();
+        const unsigned r = m_engine.addNode(containerStyle(QSizeF()));
+        for (int i = 0; i < n; ++i) {
+            QQuickItem* child = itemAt(i);
+            const unsigned node = m_engine.addNode(itemStyle(child));
+            m_engine.addChild(r, node);
+        }
+
+        switch (which) {
+        case Qt::MinimumSize:
+            m_engine.compute(taffy::AvailableSpace::minContent(), taffy::AvailableSpace::minContent());
+            break;
+        case Qt::MaximumSize:
+            m_engine.compute(taffy::AvailableSpace::maxContent(), taffy::AvailableSpace::maxContent());
+            break;
+        default:
+            m_engine.compute(taffy::AvailableSpace::maxContent(), taffy::AvailableSpace::minContent());
+            break;
+        }
+
+        taffy::Layout rootLayout;
+        if (m_engine.layout(r, rootLayout)) {
+            m_cachedSizeHints[int(which)] = QSizeF(rootLayout.size.width, rootLayout.size.height);
+        } else {
+            m_cachedSizeHints[int(which)] = QSizeF(0, 0);
+        }
     }
 
-    taffy::Layout rootLayout;
-    if (!m_engine.layout(root, rootLayout)) {
-        return QSizeF(0, 0);
+    m_sizeHintsDirty = false;
+    if (idx >= 0 && idx < Qt::NSizeHints) {
+        return m_cachedSizeHints[idx];
     }
-    return QSizeF(rootLayout.size.width, rootLayout.size.height);
+    return m_cachedSizeHints[Qt::PreferredSize];
 }
 
 void TaffyLayout::rearrange(const QSizeF& size)
@@ -576,9 +669,7 @@ void TaffyLayout::rearrange(const QSizeF& size)
     for (int i = 0; i < layoutItems.size(); ++i) {
         taffy::Layout l;
         if (m_engine.layout(unsigned(i + 1), l)) {
-            layoutItems[i]->setX(l.location.x);
-            layoutItems[i]->setY(l.location.y);
-            layoutItems[i]->setSize(QSizeF(l.size.width, l.size.height));
+            applyChildGeometry(layoutItems[i], l);
         }
     }
 }
