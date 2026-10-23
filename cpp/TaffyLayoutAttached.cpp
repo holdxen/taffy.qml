@@ -296,3 +296,26 @@ void TaffyLayoutAttached::setBorderLeft(qreal v)
     emit itemStyleChanged();
 }
 
+
+QString TaffyLayoutAttached::gridRow() const { return m_gridRow; }
+void TaffyLayoutAttached::setGridRow(const QString& v) { m_gridRow = v; emit itemStyleChanged(); }
+QString TaffyLayoutAttached::gridColumn() const { return m_gridColumn; }
+void TaffyLayoutAttached::setGridColumn(const QString& v) { m_gridColumn = v; emit itemStyleChanged(); }
+QString TaffyLayoutAttached::boxSizing() const { return m_boxSizing; }
+void TaffyLayoutAttached::setBoxSizing(const QString& v) { m_boxSizing = v; emit itemStyleChanged(); }
+QString TaffyLayoutAttached::overflowX() const { return m_overflowX; }
+void TaffyLayoutAttached::setOverflowX(const QString& v) { m_overflowX = v; emit itemStyleChanged(); }
+QString TaffyLayoutAttached::overflowY() const { return m_overflowY; }
+void TaffyLayoutAttached::setOverflowY(const QString& v) { m_overflowY = v; emit itemStyleChanged(); }
+QString TaffyLayoutAttached::cssFloat() const { return m_cssFloat; }
+void TaffyLayoutAttached::setCssFloat(const QString& v) { m_cssFloat = v; emit itemStyleChanged(); }
+QString TaffyLayoutAttached::clear() const { return m_clear; }
+void TaffyLayoutAttached::setClear(const QString& v) { m_clear = v; emit itemStyleChanged(); }
+QString TaffyLayoutAttached::textAlign() const { return m_textAlign; }
+void TaffyLayoutAttached::setTextAlign(const QString& v) { m_textAlign = v; emit itemStyleChanged(); }
+bool TaffyLayoutAttached::itemIsTable() const { return m_itemIsTable; }
+void TaffyLayoutAttached::setItemIsTable(bool v) { m_itemIsTable = v; emit itemStyleChanged(); }
+bool TaffyLayoutAttached::itemIsReplaced() const { return m_itemIsReplaced; }
+void TaffyLayoutAttached::setItemIsReplaced(bool v) { m_itemIsReplaced = v; emit itemStyleChanged(); }
+bool TaffyLayoutAttached::itemIsCompressibleReplaced() const { return m_itemIsCompressibleReplaced; }
+void TaffyLayoutAttached::setItemIsCompressibleReplaced(bool v) { m_itemIsCompressibleReplaced = v; emit itemStyleChanged(); }

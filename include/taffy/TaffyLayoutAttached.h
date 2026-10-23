@@ -45,6 +45,17 @@ class TaffyLayoutAttached : public QObject
     Q_PROPERTY(qreal borderBottom READ borderBottom WRITE setBorderBottom NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal borderLeft READ borderLeft WRITE setBorderLeft NOTIFY itemStyleChanged)
     Q_PROPERTY(QString position READ position WRITE setPosition NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString gridRow READ gridRow WRITE setGridRow NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString gridColumn READ gridColumn WRITE setGridColumn NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString boxSizing READ boxSizing WRITE setBoxSizing NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString overflowX READ overflowX WRITE setOverflowX NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString overflowY READ overflowY WRITE setOverflowY NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString cssFloat READ cssFloat WRITE setCssFloat NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString clear READ clear WRITE setClear NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString textAlign READ textAlign WRITE setTextAlign NOTIFY itemStyleChanged)
+    Q_PROPERTY(bool itemIsTable READ itemIsTable WRITE setItemIsTable NOTIFY itemStyleChanged)
+    Q_PROPERTY(bool itemIsReplaced READ itemIsReplaced WRITE setItemIsReplaced NOTIFY itemStyleChanged)
+    Q_PROPERTY(bool itemIsCompressibleReplaced READ itemIsCompressibleReplaced WRITE setItemIsCompressibleReplaced NOTIFY itemStyleChanged)
     Q_PROPERTY(QString insetTop READ insetTop WRITE setInsetTop NOTIFY itemStyleChanged)
     Q_PROPERTY(QString insetRight READ insetRight WRITE setInsetRight NOTIFY itemStyleChanged)
     Q_PROPERTY(QString insetBottom READ insetBottom WRITE setInsetBottom NOTIFY itemStyleChanged)
@@ -109,6 +120,28 @@ public:
 
     QString position() const;
     void setPosition(const QString& v);
+    QString gridRow() const;
+    void setGridRow(const QString& v);
+    QString gridColumn() const;
+    void setGridColumn(const QString& v);
+    QString boxSizing() const;
+    void setBoxSizing(const QString& v);
+    QString overflowX() const;
+    void setOverflowX(const QString& v);
+    QString overflowY() const;
+    void setOverflowY(const QString& v);
+    QString cssFloat() const;
+    void setCssFloat(const QString& v);
+    QString clear() const;
+    void setClear(const QString& v);
+    QString textAlign() const;
+    void setTextAlign(const QString& v);
+    bool itemIsTable() const;
+    void setItemIsTable(bool v);
+    bool itemIsReplaced() const;
+    void setItemIsReplaced(bool v);
+    bool itemIsCompressibleReplaced() const;
+    void setItemIsCompressibleReplaced(bool v);
     QString insetTop() const;
     void setInsetTop(const QString& v);
     QString insetRight() const;
@@ -147,6 +180,17 @@ private:
     qreal m_borderBottom = 0.0;
     qreal m_borderLeft = 0.0;
     QString m_position = QStringLiteral("static");
+    QString m_gridRow = QStringLiteral("auto");
+    QString m_gridColumn = QStringLiteral("auto");
+    QString m_boxSizing = QStringLiteral("border-box");
+    QString m_overflowX = QStringLiteral("visible");
+    QString m_overflowY = QStringLiteral("visible");
+    QString m_cssFloat = QStringLiteral("none");
+    QString m_clear = QStringLiteral("none");
+    QString m_textAlign = QStringLiteral("auto");
+    bool m_itemIsTable = false;
+    bool m_itemIsReplaced = false;
+    bool m_itemIsCompressibleReplaced = false;
     QString m_insetTop = QStringLiteral("auto");
     QString m_insetRight = QStringLiteral("auto");
     QString m_insetBottom = QStringLiteral("auto");

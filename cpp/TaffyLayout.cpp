@@ -211,6 +211,107 @@ void TaffyLayout::setDirection(const QString& v)
     invalidate();
 }
 
+
+QString TaffyLayout::gridTemplateRows() const { return m_gridTemplateRows; }
+void TaffyLayout::setGridTemplateRows(const QString& v)
+{
+    if (m_gridTemplateRows == v)
+        return;
+    m_gridTemplateRows = v;
+    emit styleChanged();
+    invalidate();
+}
+QString TaffyLayout::gridTemplateColumns() const { return m_gridTemplateColumns; }
+void TaffyLayout::setGridTemplateColumns(const QString& v)
+{
+    if (m_gridTemplateColumns == v)
+        return;
+    m_gridTemplateColumns = v;
+    emit styleChanged();
+    invalidate();
+}
+QString TaffyLayout::gridAutoRows() const { return m_gridAutoRows; }
+void TaffyLayout::setGridAutoRows(const QString& v)
+{
+    if (m_gridAutoRows == v)
+        return;
+    m_gridAutoRows = v;
+    emit styleChanged();
+    invalidate();
+}
+QString TaffyLayout::gridAutoColumns() const { return m_gridAutoColumns; }
+void TaffyLayout::setGridAutoColumns(const QString& v)
+{
+    if (m_gridAutoColumns == v)
+        return;
+    m_gridAutoColumns = v;
+    emit styleChanged();
+    invalidate();
+}
+QString TaffyLayout::gridTemplateAreas() const { return m_gridTemplateAreas; }
+void TaffyLayout::setGridTemplateAreas(const QString& v)
+{
+    if (m_gridTemplateAreas == v)
+        return;
+    m_gridTemplateAreas = v;
+    emit styleChanged();
+    invalidate();
+}
+QStringList TaffyLayout::gridTemplateRowNames() const { return m_gridTemplateRowNames; }
+void TaffyLayout::setGridTemplateRowNames(const QStringList& v)
+{
+    if (m_gridTemplateRowNames == v)
+        return;
+    m_gridTemplateRowNames = v;
+    emit styleChanged();
+    invalidate();
+}
+QStringList TaffyLayout::gridTemplateColumnNames() const { return m_gridTemplateColumnNames; }
+void TaffyLayout::setGridTemplateColumnNames(const QStringList& v)
+{
+    if (m_gridTemplateColumnNames == v)
+        return;
+    m_gridTemplateColumnNames = v;
+    emit styleChanged();
+    invalidate();
+}
+QString TaffyLayout::boxSizing() const { return m_boxSizing; }
+void TaffyLayout::setBoxSizing(const QString& v)
+{
+    if (m_boxSizing == v)
+        return;
+    m_boxSizing = v;
+    emit styleChanged();
+    invalidate();
+}
+QString TaffyLayout::overflowX() const { return m_overflowX; }
+void TaffyLayout::setOverflowX(const QString& v)
+{
+    if (m_overflowX == v)
+        return;
+    m_overflowX = v;
+    emit styleChanged();
+    invalidate();
+}
+QString TaffyLayout::overflowY() const { return m_overflowY; }
+void TaffyLayout::setOverflowY(const QString& v)
+{
+    if (m_overflowY == v)
+        return;
+    m_overflowY = v;
+    emit styleChanged();
+    invalidate();
+}
+qreal TaffyLayout::scrollbarWidth() const { return m_scrollbarWidth; }
+void TaffyLayout::setScrollbarWidth(qreal v)
+{
+    if (qFuzzyCompare(m_scrollbarWidth, v))
+        return;
+    m_scrollbarWidth = v;
+    emit styleChanged();
+    invalidate();
+}
+
 taffy::Style TaffyLayout::containerStyle(const QSizeF& size) const
 {
     taffy::Style s;
@@ -224,6 +325,23 @@ taffy::Style TaffyLayout::containerStyle(const QSizeF& size) const
     s.gap.width = std::to_string(m_gapWidth) + "px";
     s.gap.height = std::to_string(m_gapHeight) + "px";
     s.gridAutoFlow = toStd(m_gridAutoFlow);
+    s.gridTemplateRows = toStd(m_gridTemplateRows);
+    s.gridTemplateColumns = toStd(m_gridTemplateColumns);
+    s.gridAutoRows = toStd(m_gridAutoRows);
+    s.gridAutoColumns = toStd(m_gridAutoColumns);
+    s.gridTemplateAreas = toStd(m_gridTemplateAreas);
+    s.gridTemplateRowNames.clear();
+    for (const auto& n : m_gridTemplateRowNames) {
+        s.gridTemplateRowNames.push_back(n.toStdString());
+    }
+    s.gridTemplateColumnNames.clear();
+    for (const auto& n : m_gridTemplateColumnNames) {
+        s.gridTemplateColumnNames.push_back(n.toStdString());
+    }
+    s.boxSizing = toStd(m_boxSizing);
+    s.overflowX = toStd(m_overflowX);
+    s.overflowY = toStd(m_overflowY);
+    s.scrollbarWidth = m_scrollbarWidth;
     s.direction = toStd(m_direction);
     s.padding.top = std::to_string(m_paddingTop) + "px";
     s.padding.right = std::to_string(m_paddingRight) + "px";
@@ -294,6 +412,18 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     s.inset.right = toStd(attached->insetRight());
     s.inset.bottom = toStd(attached->insetBottom());
     s.inset.left = toStd(attached->insetLeft());
+
+    s.gridRow.start = toStd(attached->gridRow());
+    s.gridColumn.start = toStd(attached->gridColumn());
+    s.boxSizing = toStd(attached->boxSizing());
+    s.overflowX = toStd(attached->overflowX());
+    s.overflowY = toStd(attached->overflowY());
+    s.cssFloat = toStd(attached->cssFloat());
+    s.clear = toStd(attached->clear());
+    s.textAlign = toStd(attached->textAlign());
+    s.itemIsTable = attached->itemIsTable();
+    s.itemIsReplaced = attached->itemIsReplaced();
+    s.itemIsCompressibleReplaced = attached->itemIsCompressibleReplaced();
 
     return s;
 }

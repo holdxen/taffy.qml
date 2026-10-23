@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QStringList>
+
 #include <QtQuickLayouts/private/qquicklayout_p.h>
 
 #include <taffy/TaffyEngine.h>
@@ -27,6 +29,17 @@ class TaffyLayout : public QQuickLayout
     Q_PROPERTY(qreal gapWidth READ gapWidth WRITE setGapWidth NOTIFY styleChanged)
     Q_PROPERTY(qreal gapHeight READ gapHeight WRITE setGapHeight NOTIFY styleChanged)
     Q_PROPERTY(QString gridAutoFlow READ gridAutoFlow WRITE setGridAutoFlow NOTIFY styleChanged)
+    Q_PROPERTY(QString gridTemplateRows READ gridTemplateRows WRITE setGridTemplateRows NOTIFY styleChanged)
+    Q_PROPERTY(QString gridTemplateColumns READ gridTemplateColumns WRITE setGridTemplateColumns NOTIFY styleChanged)
+    Q_PROPERTY(QString gridAutoRows READ gridAutoRows WRITE setGridAutoRows NOTIFY styleChanged)
+    Q_PROPERTY(QString gridAutoColumns READ gridAutoColumns WRITE setGridAutoColumns NOTIFY styleChanged)
+    Q_PROPERTY(QString gridTemplateAreas READ gridTemplateAreas WRITE setGridTemplateAreas NOTIFY styleChanged)
+    Q_PROPERTY(QStringList gridTemplateRowNames READ gridTemplateRowNames WRITE setGridTemplateRowNames NOTIFY styleChanged)
+    Q_PROPERTY(QStringList gridTemplateColumnNames READ gridTemplateColumnNames WRITE setGridTemplateColumnNames NOTIFY styleChanged)
+    Q_PROPERTY(QString boxSizing READ boxSizing WRITE setBoxSizing NOTIFY styleChanged)
+    Q_PROPERTY(QString overflowX READ overflowX WRITE setOverflowX NOTIFY styleChanged)
+    Q_PROPERTY(QString overflowY READ overflowY WRITE setOverflowY NOTIFY styleChanged)
+    Q_PROPERTY(qreal scrollbarWidth READ scrollbarWidth WRITE setScrollbarWidth NOTIFY styleChanged)
     Q_PROPERTY(qreal paddingTop READ paddingTop WRITE setPaddingTop NOTIFY styleChanged)
     Q_PROPERTY(qreal paddingRight READ paddingRight WRITE setPaddingRight NOTIFY styleChanged)
     Q_PROPERTY(qreal paddingBottom READ paddingBottom WRITE setPaddingBottom NOTIFY styleChanged)
@@ -59,6 +72,28 @@ public:
     void setGapHeight(qreal v);
     QString gridAutoFlow() const;
     void setGridAutoFlow(const QString& v);
+    QString gridTemplateRows() const;
+    void setGridTemplateRows(const QString& v);
+    QString gridTemplateColumns() const;
+    void setGridTemplateColumns(const QString& v);
+    QString gridAutoRows() const;
+    void setGridAutoRows(const QString& v);
+    QString gridAutoColumns() const;
+    void setGridAutoColumns(const QString& v);
+    QString gridTemplateAreas() const;
+    void setGridTemplateAreas(const QString& v);
+    QStringList gridTemplateRowNames() const;
+    void setGridTemplateRowNames(const QStringList& v);
+    QStringList gridTemplateColumnNames() const;
+    void setGridTemplateColumnNames(const QStringList& v);
+    QString boxSizing() const;
+    void setBoxSizing(const QString& v);
+    QString overflowX() const;
+    void setOverflowX(const QString& v);
+    QString overflowY() const;
+    void setOverflowY(const QString& v);
+    qreal scrollbarWidth() const;
+    void setScrollbarWidth(qreal v);
     qreal paddingTop() const;
     void setPaddingTop(qreal v);
     qreal paddingRight() const;
@@ -100,6 +135,17 @@ private:
     qreal m_gapWidth = 0.0;
     qreal m_gapHeight = 0.0;
     QString m_gridAutoFlow = QStringLiteral("row");
+    QString m_gridTemplateRows;
+    QString m_gridTemplateColumns;
+    QString m_gridAutoRows;
+    QString m_gridAutoColumns;
+    QString m_gridTemplateAreas;
+    QStringList m_gridTemplateRowNames;
+    QStringList m_gridTemplateColumnNames;
+    QString m_boxSizing = QStringLiteral("border-box");
+    QString m_overflowX = QStringLiteral("visible");
+    QString m_overflowY = QStringLiteral("visible");
+    qreal m_scrollbarWidth = 0.0;
     qreal m_paddingTop = 0.0;
     qreal m_paddingRight = 0.0;
     qreal m_paddingBottom = 0.0;
