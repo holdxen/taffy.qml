@@ -319,3 +319,43 @@ bool TaffyLayoutAttached::itemIsReplaced() const { return m_itemIsReplaced; }
 void TaffyLayoutAttached::setItemIsReplaced(bool v) { m_itemIsReplaced = v; emit itemStyleChanged(); }
 bool TaffyLayoutAttached::itemIsCompressibleReplaced() const { return m_itemIsCompressibleReplaced; }
 void TaffyLayoutAttached::setItemIsCompressibleReplaced(bool v) { m_itemIsCompressibleReplaced = v; emit itemStyleChanged(); }
+
+#include <QMetaProperty>
+#include <QTextStream>
+
+QVariantMap TaffyLayoutAttached::taffyStyle() const
+{
+    QVariantMap map;
+    const QMetaObject* mo = metaObject();
+    for (int i = 0; i < mo->propertyCount(); ++i) {
+        const QMetaProperty p = mo->property(i);
+        if (p.isConstant())
+            continue;
+        // Skip the debug aggregate itself to avoid recursion / noise.
+        if (QLatin1String(p.name()) == QLatin1String("taffyStyle"))
+            continue;
+        map.insert(QLatin1String(p.name()), p.read(this));
+    }
+    return map;
+}
+
+QString TaffyLayoutAttached::dump() const
+{
+    QString s;
+    QTextStream out(&s);
+    out << "TaffyLayoutAttached(" << static_cast<const void*>(this) << ")\n";
+    out << "  parent = " << static_cast<const void*>(parent()) << "\n";
+
+    const QMetaObject* mo = metaObject();
+    for (int i = 0; i < mo->propertyCount(); ++i) {
+        const QMetaProperty p = mo->property(i);
+        if (p.isConstant())
+            continue;
+        if (QLatin1String(p.name()) == QLatin1String("taffyStyle"))
+            continue;
+        const QVariant v = p.read(this);
+        out << "  " << QString::fromLatin1(p.name()).leftJustified(22, ' ')
+            << " = " << v.toString() << "\n";
+    }
+    return s;
+}

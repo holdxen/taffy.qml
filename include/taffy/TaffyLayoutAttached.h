@@ -4,6 +4,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QVariantMap>
 
 /**
  * Item-side style as attached properties of TaffyLayout.
@@ -60,6 +61,8 @@ class TaffyLayoutAttached : public QObject
     Q_PROPERTY(QString insetRight READ insetRight WRITE setInsetRight NOTIFY itemStyleChanged)
     Q_PROPERTY(QString insetBottom READ insetBottom WRITE setInsetBottom NOTIFY itemStyleChanged)
     Q_PROPERTY(QString insetLeft READ insetLeft WRITE setInsetLeft NOTIFY itemStyleChanged)
+    // Debug: all taffy-related QML properties, via QMetaObject reflection
+    Q_PROPERTY(QVariantMap taffyStyle READ taffyStyle NOTIFY itemStyleChanged)
 
 public:
     explicit TaffyLayoutAttached(QObject* parent = nullptr);
@@ -150,6 +153,11 @@ public:
     void setInsetBottom(const QString& v);
     QString insetLeft() const;
     void setInsetLeft(const QString& v);
+
+    /** Reflect all Q_PROPERTY values into a map (taffyStyle). */
+    QVariantMap taffyStyle() const;
+    /** Human-readable dump of all taffy-related properties. */
+    Q_INVOKABLE QString dump() const;
 
 signals:
     void itemStyleChanged();
