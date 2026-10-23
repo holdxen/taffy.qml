@@ -6,6 +6,8 @@ project(taffy
     LANGUAGES CXX
 )
 
+set(CMAKE_PREFIX_PATH "/usr/local/qt6")
+
 # When consumed via FetchContent / add_subdirectory, don't pollute the parent.
 if(NOT DEFINED PROJECT_NAME OR CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(TAFFY_IS_TOP_LEVEL ON)
@@ -26,7 +28,7 @@ set(CMAKE_AUTOMOC ON)
 # --------------------------------------------------------------------
 # Qt
 # --------------------------------------------------------------------
-find_package(Qt6 QUIET COMPONENTS Core Gui Qml Quick QuickControls2)
+find_package(Qt6 QUIET COMPONENTS Core Gui Qml Quick QuickControls2 QuickPrivate QuickLayouts QuickLayoutsPrivate)
 if(NOT Qt6_FOUND)
     find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
     set(TAFFY_QT_PACKAGE Qt5)
@@ -40,6 +42,9 @@ if(MSVC)
         ${TAFFY_QT_PACKAGE}::Gui
         ${TAFFY_QT_PACKAGE}::Qml
         ${TAFFY_QT_PACKAGE}::Quick
+        ${TAFFY_QT_PACKAGE}::QuickPrivate
+        ${TAFFY_QT_PACKAGE}::QuickLayouts
+        ${TAFFY_QT_PACKAGE}::QuickLayoutsPrivate
         ${TAFFY_QT_PACKAGE}::QuickControls2
         PROPERTY MAP_IMPORTED_CONFIG_DEBUG "RELEASE")
 endif()
@@ -70,6 +75,9 @@ cxx_qt_import_crate(
         ${TAFFY_QT_PACKAGE}::Gui
         ${TAFFY_QT_PACKAGE}::Qml
         ${TAFFY_QT_PACKAGE}::Quick
+        ${TAFFY_QT_PACKAGE}::QuickPrivate
+        ${TAFFY_QT_PACKAGE}::QuickLayouts
+        ${TAFFY_QT_PACKAGE}::QuickLayoutsPrivate
         ${TAFFY_QT_PACKAGE}::QuickControls2
 )
 
