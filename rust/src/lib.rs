@@ -112,6 +112,21 @@ pub mod ffi {
         bottom: f64,
     }
 
+    /// How much space is available on an axis (mirrors `taffy::AvailableSpace`).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum AvailableSpaceKind {
+        Definite,
+        MinContent,
+        MaxContent,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    struct AvailableSpace {
+        kind: AvailableSpaceKind,
+        /// Only used when `kind == Definite`.
+        value: f64,
+    }
+
     /// Mirrors `taffy::Layout` (without feature-gated fields).
     #[derive(Debug, Clone, Copy)]
     struct Layout {
@@ -152,8 +167,8 @@ pub mod ffi {
         fn engine_set_style(self: &mut TaffyEngine, node: u32, style: &NodeStyle) -> Result<()>;
         fn engine_compute(
             self: &mut TaffyEngine,
-            available_width: f64,
-            available_height: f64,
+            width: &AvailableSpace,
+            height: &AvailableSpace,
         ) -> Result<()>;
         fn engine_layout(self: &TaffyEngine, node: u32) -> Result<Layout>;
         fn engine_clear(self: &mut TaffyEngine);
@@ -267,6 +282,15 @@ fn map_direction(v: ffi::Direction) -> Direction {
     }
 }
 
+fn map_available_space(v: &ffi::AvailableSpace) -> AvailableSpace {
+    match v.kind {
+        ffi::AvailableSpaceKind::Definite => AvailableSpace::Definite(v.value as f32),
+        ffi::AvailableSpaceKind::MinContent => AvailableSpace::MinContent,
+        ffi::AvailableSpaceKind::MaxContent => AvailableSpace::MaxContent,
+        _ => AvailableSpace::Definite(v.value as f32),
+    }
+}
+
 fn map_dim(v: f64) -> Dimension {
     if v.is_nan() {
         Dimension::auto()
@@ -337,13 +361,17 @@ impl TaffyEngine {
         self.tree.set_style(n, to_taffy_style(style)).map_err(taffy_err)
     }
 
-    fn engine_compute(&mut self, available_width: f64, available_height: f64) -> Result<(), String> {
+    fn engine_compute(
+        &mut self,
+        width: &ffi::AvailableSpace,
+        height: &ffi::AvailableSpace,
+    ) -> Result<(), String> {
         let Some(&root) = self.nodes.first() else {
             return Ok(());
         };
         let size = Size {
-            width: AvailableSpace::Definite(available_width as f32),
-            height: AvailableSpace::Definite(available_height as f32),
+            width: map_available_space(width),
+            height: map_available_space(height),
         };
         self.tree.compute_layout(root, size).map_err(taffy_err)
     }
