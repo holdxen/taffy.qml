@@ -5,11 +5,21 @@
 // Note: <QtQml/qqmlintegration.h> is NOT in the QtQml framework (it's QtQmlIntegration).
 #include <QtQml/qqmlregistration.h>
 
-class TaffyAttached : public QObject
+#include <taffy_rust/src/utils.cxxqt.h>
+
+class Taffy : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
+    QML_ATTACHED(TaffyAttached)
 
 public:
     using QObject::QObject;
+
+    static TaffyAttached* qmlAttachedProperties(QObject* target)
+    {
+        auto* attached = new TaffyAttached();
+        attached->setParent(target);
+        return attached;
+    }
 };

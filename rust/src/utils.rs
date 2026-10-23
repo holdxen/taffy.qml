@@ -1,9 +1,10 @@
 // Style enums bridged from the taffy crate to Qt/QML via cxx-qt.
 // Naming: enum name prefixes every variant (see FlexDirection::FlexDirectionRow).
 
+use std::pin::Pin;
 // Re-export so the bridge can refer to `super::TaffyLayoutRust`.
 pub use crate::layout::TaffyLayoutRust;
-
+pub use crate::attached::TaffyAttachedRust;
 use crate::utils::ffi::{
     AlignContentKeyword,
     AlignItemsKeyword,
@@ -181,10 +182,65 @@ pub mod ffi {
         #[qproperty(AlignContentKeyword, justify_content)]
         #[qproperty(AlignContentKeyword, align_content)]
         type TaffyLayout = super::TaffyLayoutRust;
+
+
+        #[qobject]
+        #[qproperty(f32, flex_grow)]
+        #[qproperty(f32, flex_shrink)]
+        #[qproperty(AlignItemsKeyword, align_self)]
+        type TaffyAttached = super::TaffyAttachedRust;
+
+
+
+    }
+
+    // Base methods and overrides must be sibling extern blocks, not nested.
+    unsafe extern "RustQt" {
+        #[inherit]
+        #[cxx_name = "polish"]
+        fn polish(self: Pin<&mut TaffyLayout>);
+
+        #[inherit]
+        #[cxx_name = "componentComplete"]
+        fn base_component_complete(self: Pin<&mut TaffyLayout>);
+    }
+
+
+    extern "RustQt" {
+        #[cxx_override]
+        #[cxx_name = "updatePolish"]
+        fn update_polish(self: Pin<&mut TaffyLayout>);
+
+        #[cxx_override]
+        #[cxx_name = "componentComplete"]
+        fn component_complete(self: Pin<&mut TaffyLayout>);
     }
 
     impl cxx_qt::Initialize for TaffyLayout {}
 
+}
+
+use cxx_qt::CxxQtType;
+
+impl ffi::TaffyLayout {
+    pub fn update_polish(mut self: Pin<&mut Self>) {
+        if !self.rust().dirty {
+            return;
+        }
+        self.as_mut().rust_mut().dirty = false;
+
+    }
+
+    pub fn schedule_layout(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().dirty = true;
+        self.polish()
+    }
+
+    pub fn component_complete(
+        mut self: Pin<&mut Self>,
+    ) {
+        self.as_mut().base_component_complete();
+    }
 }
 
 impl From<Display> for taffy::Display {
