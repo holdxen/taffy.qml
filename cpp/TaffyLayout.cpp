@@ -27,7 +27,46 @@ TaffyLayout::~TaffyLayout() = default;
 
 TaffyLayoutAttached* TaffyLayout::qmlAttachedProperties(QObject* object)
 {
-    return new TaffyLayoutAttached(object);
+    auto* attached = new TaffyLayoutAttached(object);
+    if (auto* child = qobject_cast<QQuickItem*>(object)) {
+        if (auto* layout = qobject_cast<TaffyLayout*>(child->parentItem())) {
+            QObject::connect(attached, &TaffyLayoutAttached::itemStyleChanged,
+                             layout, &TaffyLayout::onItemStyleChanged,
+                             Qt::UniqueConnection);
+        }
+    }
+    return attached;
+}
+
+void TaffyLayout::watchItemStyle(QQuickItem* child) const
+{
+    if (!child) {
+        return;
+    }
+    auto* attached = qobject_cast<TaffyLayoutAttached*>(
+        qmlAttachedPropertiesObject<TaffyLayout>(child, false));
+    if (!attached) {
+        return;
+    }
+    auto* self = const_cast<TaffyLayout*>(this);
+    QObject::connect(attached, &TaffyLayoutAttached::itemStyleChanged,
+                     self, &TaffyLayout::onItemStyleChanged,
+                     Qt::UniqueConnection);
+}
+
+void TaffyLayout::onItemStyleChanged()
+{
+    invalidate();
+}
+
+void TaffyLayout::componentComplete()
+{
+    QQuickLayout::componentComplete();
+    // First layout, same as QQuickFlexboxLayout: skip if a parent layout will drive us.
+    if (qobject_cast<QQuickLayout*>(parentItem())) {
+        return;
+    }
+    rearrange(QSizeF(width(), height()));
 }
 
 QString TaffyLayout::display() const
@@ -359,6 +398,7 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     taffy::Style s;
     s.display = "flex";
 
+    watchItemStyle(child);
     auto* attached = qobject_cast<TaffyLayoutAttached*>(qmlAttachedPropertiesObject<TaffyLayout>(child, false));
 
     qreal fallbackW = child->width() > 0 ? child->width() : (child->implicitWidth() > 0 ? child->implicitWidth() : 100);
@@ -436,8 +476,12 @@ void TaffyLayout::updateLayoutItems()
 void TaffyLayout::itemChange(ItemChange change, const ItemChangeData& value)
 {
     QQuickLayout::itemChange(change, value);
-    if (change == ItemChildAddedChange || change == ItemChildRemovedChange
-        || change == ItemVisibleHasChanged) {
+    if (change == ItemChildAddedChange) {
+        if (value.item) {
+            watchItemStyle(value.item);
+        }
+        invalidate();
+    } else if (change == ItemChildRemovedChange || change == ItemVisibleHasChanged) {
         invalidate();
     }
 }

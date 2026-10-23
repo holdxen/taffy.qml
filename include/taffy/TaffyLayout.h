@@ -105,6 +105,7 @@ public:
     QString direction() const;
     void setDirection(const QString& v);
 
+    void componentComplete() override;
     QSizeF sizeHint(Qt::SizeHint whichSizeHint) const override;
     void setAlignment(QQuickItem* item, Qt::Alignment align) override;
     void setStretchFactor(QQuickItem* item, int stretchFactor, Qt::Orientation orient) override;
@@ -124,6 +125,8 @@ private:
 
     taffy::Style containerStyle(const QSizeF& size) const;
     taffy::Style itemStyle(QQuickItem* child) const;
+    void watchItemStyle(QQuickItem* child) const;
+    void onItemStyleChanged();
 
     QString m_display = QStringLiteral("flex");
     QString m_flexDirection = QStringLiteral("row");
