@@ -30,9 +30,7 @@ class TaffyLayoutAttached : public QObject
     Q_PROPERTY(QString flexBasis READ flexBasis WRITE setFlexBasis NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal flexGrow READ flexGrow WRITE setFlexGrow NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal flexShrink READ flexShrink WRITE setFlexShrink NOTIFY itemStyleChanged)
-    Q_PROPERTY(bool hasAlignSelf READ hasAlignSelf WRITE setHasAlignSelf NOTIFY itemStyleChanged)
     Q_PROPERTY(QString alignSelf READ alignSelf WRITE setAlignSelf NOTIFY itemStyleChanged)
-    Q_PROPERTY(bool hasJustifySelf READ hasJustifySelf WRITE setHasJustifySelf NOTIFY itemStyleChanged)
     Q_PROPERTY(QString justifySelf READ justifySelf WRITE setJustifySelf NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal marginTop READ marginTop WRITE setMarginTop NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal marginRight READ marginRight WRITE setMarginRight NOTIFY itemStyleChanged)
@@ -77,12 +75,8 @@ public:
     qreal flexShrink() const;
     void setFlexShrink(qreal v);
 
-    bool hasAlignSelf() const;
-    void setHasAlignSelf(bool v);
     QString alignSelf() const;
     void setAlignSelf(const QString& v);
-    bool hasJustifySelf() const;
-    void setHasJustifySelf(bool v);
     QString justifySelf() const;
     void setJustifySelf(const QString& v);
 
@@ -138,10 +132,8 @@ private:
     QString m_flexBasis = QStringLiteral("auto");
     qreal m_flexGrow = 0.0;
     qreal m_flexShrink = 1.0;
-    bool m_hasAlignSelf = false;
-    QString m_alignSelf = QStringLiteral("normal");
-    bool m_hasJustifySelf = false;
-    QString m_justifySelf = QStringLiteral("normal");
+    QString m_alignSelf; // empty or "auto" = unset
+    QString m_justifySelf; // empty or "auto" = unset
     qreal m_marginTop = 0.0;
     qreal m_marginRight = 0.0;
     qreal m_marginBottom = 0.0;
