@@ -1,7 +1,6 @@
 #include "taffy/TaffyLayout.h"
 
 #include <algorithm>
-#include <cmath>
 
 #include <QDebug>
 #include <QMetaProperty>
@@ -32,7 +31,7 @@ void setLinePlacement(taffy::LinePlacement& p, const QString& css)
         p.end = "auto";
         return;
     }
-    const int slash = s.indexOf(QLatin1Char('/'));
+    const auto slash = s.indexOf(QLatin1Char('/'));
     if (slash < 0) {
         p.start = s.toStdString();
         p.end = "auto";
@@ -112,7 +111,7 @@ void TaffyLayout::componentComplete()
     for (int i = 0; i < n; ++i) {
         QQuickItem* child = itemAt(i);
         watchItemStyle(child);
-        checkAnchors(child);
+        checkItemAnchors(child);
     }
     // First layout, same as QQuickFlexboxLayout: skip if a parent layout will drive us.
     if (qobject_cast<QQuickLayout*>(parentItem())) {
@@ -573,7 +572,7 @@ void TaffyLayout::updateLayoutItems()
     invalidate();
 }
 
-void TaffyLayout::checkAnchors(QQuickItem* item) const
+void TaffyLayout::checkItemAnchors(QQuickItem* item)
 {
     if (!item) {
         return;
@@ -610,7 +609,7 @@ void TaffyLayout::itemChange(ItemChange change, const ItemChangeData& value)
     if (change == ItemChildAddedChange) {
         if (value.item) {
             watchItemStyle(value.item);
-            checkAnchors(value.item);
+            checkItemAnchors(value.item);
         }
         invalidate();
     } else if (change == ItemChildRemovedChange || change == ItemVisibleHasChanged) {
@@ -691,7 +690,7 @@ QSizeF TaffyLayout::sizeHint(Qt::SizeHint whichSizeHint) const
     const int n = itemCount();
     for (int i = 0; i < n; ++i) {
         watchItemStyle(itemAt(i));
-        checkAnchors(itemAt(i));
+        checkItemAnchors(itemAt(i));
     }
 
     // Fill all three hints so the cache is complete.
