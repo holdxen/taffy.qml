@@ -11,7 +11,7 @@ taffy/
 │   ├── Taffy.h              # registerQmlTypes()
 │   ├── TaffyTypes.h         # Qt/QML 枚举（Q_ENUM）
 │   ├── TaffyEngine.h        # C++ 门面，调用 Rust 布局引擎
-│   └── TaffyItem.h          # QQuickItem
+│   └── TaffyLayout.h        # QQuickLayout
 ├── cpp/                     # 全部 Qt 逻辑
 ├── rust/                    # 纯 cxx 导出 taffy 类型（无 Qt）
 │   └── src/lib.rs

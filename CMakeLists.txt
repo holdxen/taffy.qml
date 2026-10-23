@@ -72,12 +72,10 @@ endif()
 add_library(taffy
     cpp/Taffy.cpp
     cpp/TaffyEngine.cpp
-    cpp/TaffyItem.cpp
     cpp/TaffyLayout.cpp
     cpp/TaffyLayoutAttached.cpp
     include/taffy/Taffy.h
     include/taffy/TaffyEngine.h
-    include/taffy/TaffyItem.h
     include/taffy/TaffyLayout.h
     include/taffy/TaffyLayoutAttached.h
 )
