@@ -110,14 +110,26 @@ bool Engine::setStyle(quint32 node,
     }
 }
 
-bool Engine::compute(qreal availableWidth, qreal availableHeight)
+bool Engine::compute(const AvailableSpace& width, const AvailableSpace& height)
 {
+    ::AvailableSpace w;
+    w.kind = static_cast<::AvailableSpaceKind>(static_cast<int>(width.kind));
+    w.value = width.value;
+    ::AvailableSpace h;
+    h.kind = static_cast<::AvailableSpaceKind>(static_cast<int>(height.kind));
+    h.value = height.value;
     try {
-        d->engine->engine_compute(availableWidth, availableHeight);
+        d->engine->engine_compute(w, h);
         return true;
     } catch (...) {
         return false;
     }
+}
+
+bool Engine::compute(qreal availableWidth, qreal availableHeight)
+{
+    return compute(AvailableSpace::definite(availableWidth),
+                   AvailableSpace::definite(availableHeight));
 }
 
 bool Engine::layout(quint32 node, Layout& out) const

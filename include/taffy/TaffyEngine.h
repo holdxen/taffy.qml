@@ -29,6 +29,42 @@ struct Point
     double y = 0.0;
 };
 
+/**
+ * Available space on one axis (mirrors taffy::AvailableSpace).
+ * Definite(value) or MinContent / MaxContent.
+ */
+struct AvailableSpace
+{
+    enum class Kind {
+        Definite,
+        MinContent,
+        MaxContent,
+    };
+
+    Kind kind = Kind::Definite;
+    double value = 0.0;
+
+    static AvailableSpace definite(double v)
+    {
+        AvailableSpace s;
+        s.kind = Kind::Definite;
+        s.value = v;
+        return s;
+    }
+    static AvailableSpace minContent()
+    {
+        AvailableSpace s;
+        s.kind = Kind::MinContent;
+        return s;
+    }
+    static AvailableSpace maxContent()
+    {
+        AvailableSpace s;
+        s.kind = Kind::MaxContent;
+        return s;
+    }
+};
+
 /** Mirrors taffy::Layout (without feature-gated fields). */
 struct Layout
 {
@@ -63,6 +99,9 @@ public:
                   TaffyTypes::AlignContentKeyword justifyContent,
                   qreal width, qreal height,
                   qreal flexGrow = 0.0, qreal flexShrink = 1.0);
+    /** Layout with per-axis available space (definite / min-content / max-content). */
+    bool compute(const AvailableSpace& width, const AvailableSpace& height);
+    /** Convenience: definite width/height. */
     bool compute(qreal availableWidth, qreal availableHeight);
     bool layout(quint32 node, Layout& out) const;
     void clear();
