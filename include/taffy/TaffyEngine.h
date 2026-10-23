@@ -99,11 +99,6 @@ struct LinePlacement
     std::string end = "auto";
 };
 
-struct TrackSize
-{
-    std::string min = "auto";
-    std::string max = "auto";
-};
 
 /**
  * Full style surface; keyword fields are CSS strings.
@@ -148,10 +143,16 @@ struct Style
     double flexGrow = 0.0;
     double flexShrink = 1.0;
     std::string gridAutoFlow = "row";
-    std::vector<TrackSize> gridTemplateRows;
-    std::vector<TrackSize> gridTemplateColumns;
-    std::vector<TrackSize> gridAutoRows;
-    std::vector<TrackSize> gridAutoColumns;
+    // CSS track lists
+    std::string gridTemplateRows;
+    std::string gridTemplateColumns;
+    std::string gridAutoRows;
+    std::string gridAutoColumns;
+    // CSS: "\"header header\" \"main sidebar\"" or "header header / main sidebar"
+    std::string gridTemplateAreas;
+    // one entry per track: "start end"
+    std::vector<std::string> gridTemplateRowNames;
+    std::vector<std::string> gridTemplateColumnNames;
     LinePlacement gridRow;
     LinePlacement gridColumn;
 };

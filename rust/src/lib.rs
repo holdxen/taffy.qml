@@ -10,7 +10,10 @@ use taffy::prelude::{
 use taffy::style::{Clear, Direction, Float, GridAutoFlow, Overflow, TextAlign};
 use taffy::style_helpers::{length, percent};
 use taffy::tree::TaffyError;
-use taffy::{GridPlacement, GridTemplateComponent, MaxTrackSizingFunction, MinTrackSizingFunction, TrackSizingFunction};
+use taffy::{
+    GridPlacement, GridTemplateArea, GridTemplateAreas, GridTemplateComponent,
+    MaxTrackSizingFunction, MinTrackSizingFunction, TrackSizingFunction,
+};
 use taffy::TaffyTree;
 
 #[cxx::bridge]
@@ -64,11 +67,6 @@ pub mod ffi {
         end: String,
     }
 
-    /// min/max track size as CSS, e.g. "auto", "100px", "1fr", "min-content"
-    struct TrackSize {
-        min: String,
-        max: String,
-    }
 
     struct Layout {
         order: u32,
@@ -118,10 +116,17 @@ pub mod ffi {
         flex_grow: f64,
         flex_shrink: f64,
         grid_auto_flow: String,
-        grid_template_rows: Vec<TrackSize>,
-        grid_template_columns: Vec<TrackSize>,
-        grid_auto_rows: Vec<TrackSize>,
-        grid_auto_columns: Vec<TrackSize>,
+        // CSS track lists: "100px 1fr" | "repeat(2, minmax(100px, 1fr))"
+        grid_template_rows: String,
+        grid_template_columns: String,
+        // CSS track sizing lists: "auto 100px" (no repeat)
+        grid_auto_rows: String,
+        grid_auto_columns: String,
+        // CSS: "\"header header\" \"main sidebar\"" or header header / main sidebar
+        grid_template_areas: String,
+        // one entry per track: "start end" | "" | "line1"
+        grid_template_row_names: Vec<String>,
+        grid_template_column_names: Vec<String>,
         grid_row: LinePlacement,
         grid_column: LinePlacement,
     }
@@ -305,6 +310,197 @@ fn parse_track(min: &str, max: &str) -> TrackSizingFunction {
     }
 }
 
+/// Parse a CSS track list into GridTemplateComponent items.
+fn parse_grid_template(css: &str) -> Vec<GridTemplateComponent<String>> {
+    let css = css.trim();
+    if css.is_empty() {
+        return Vec::new();
+    }
+    // Single component (may be repeat(...))
+    if let Ok(c) = GridTemplateComponent::<String>::from_str(css) {
+        return vec![c];
+    }
+    // Split on whitespace at top level, then parse each token / repeat() group.
+    let mut out = Vec::new();
+    let mut token = String::new();
+    let mut depth = 0usize;
+    for ch in css.chars() {
+        match ch {
+            '(' => {
+                depth += 1;
+                token.push(ch);
+            }
+            ')' => {
+                depth = depth.saturating_sub(1);
+                token.push(ch);
+            }
+            c if c.is_whitespace() && depth == 0 => {
+                if !token.is_empty() {
+                    if let Ok(item) = GridTemplateComponent::<String>::from_str(&token) {
+                        out.push(item);
+                    }
+                    token.clear();
+                }
+            }
+            c => token.push(c),
+        }
+    }
+    if !token.is_empty() {
+        if let Ok(item) = GridTemplateComponent::<String>::from_str(&token) {
+            out.push(item);
+        }
+    }
+    out
+}
+
+/// Parse CSS track sizing list (auto rows/columns): "auto 100px minmax(0, 1fr)"
+fn parse_auto_tracks(css: &str) -> Vec<TrackSizingFunction> {
+    let css = css.trim();
+    if css.is_empty() {
+        return Vec::new();
+    }
+    if let Ok(t) = TrackSizingFunction::from_str(css) {
+        return vec![t];
+    }
+    let mut out = Vec::new();
+    let mut token = String::new();
+    let mut depth = 0usize;
+    for ch in css.chars() {
+        match ch {
+            '(' => {
+                depth += 1;
+                token.push(ch);
+            }
+            ')' => {
+                depth = depth.saturating_sub(1);
+                token.push(ch);
+            }
+            c if c.is_whitespace() && depth == 0 => {
+                if !token.is_empty() {
+                    if let Ok(item) = TrackSizingFunction::from_str(&token) {
+                        out.push(item);
+                    }
+                    token.clear();
+                }
+            }
+            c => token.push(c),
+        }
+    }
+    if !token.is_empty() {
+        if let Ok(item) = TrackSizingFunction::from_str(&token) {
+            out.push(item);
+        }
+    }
+    out
+}
+
+/// Parse CSS grid-template-areas.
+/// Accepts: `"a a" "b c"`  or  `a a / b c`
+fn parse_grid_areas(css: &str) -> Option<taffy::GridTemplateAreas<String>> {
+    let css = css.trim();
+    if css.is_empty() {
+        return None;
+    }
+    let rows: Vec<Vec<String>> = if css.contains('/') {
+        css.split('/')
+            .map(|row| {
+                row.split_whitespace()
+                    .map(|s| s.trim_matches('"').to_string())
+                    .collect()
+            })
+            .filter(|r: &Vec<String>| !r.is_empty())
+            .collect()
+    } else {
+        // quoted row strings: "a a" "b c"
+        let mut rows = Vec::new();
+        let mut cur = Vec::new();
+        let mut in_quote = false;
+        let mut buf = String::new();
+        for ch in css.chars() {
+            match ch {
+                '"' => {
+                    if in_quote {
+                        cur = buf.split_whitespace().map(|s| s.to_string()).collect();
+                        if !cur.is_empty() {
+                            rows.push(std::mem::take(&mut cur));
+                        }
+                        buf.clear();
+                        in_quote = false;
+                    } else {
+                        in_quote = true;
+                        buf.clear();
+                    }
+                }
+                c if in_quote => buf.push(c),
+                _ => {}
+            }
+        }
+        rows
+    };
+    if rows.is_empty() {
+        return None;
+    }
+    let row_count = rows.len() as u16;
+    let column_count = rows.iter().map(|r| r.len()).max().unwrap_or(0) as u16;
+
+    // Merge rectangular regions of identical names.
+    let mut areas: Vec<taffy::GridTemplateArea<String>> = Vec::new();
+    let mut used = vec![vec![false; column_count as usize]; row_count as usize];
+    for r in 0..row_count as usize {
+        for c in 0..column_count as usize {
+            if used[r][c] {
+                continue;
+            }
+            let name = rows[r].get(c).cloned().unwrap_or_else(|| ".".into());
+            if name == "." {
+                used[r][c] = true;
+                continue;
+            }
+            let mut r_end = r;
+            while r_end + 1 < row_count as usize
+                && !used[r_end + 1][c]
+                && rows[r_end + 1].get(c).map(|s| s.as_str()) == Some(name.as_str())
+            {
+                r_end += 1;
+            }
+            let mut c_end = c;
+            while c_end + 1 < column_count as usize
+                && rows[r].get(c_end + 1).map(|s| s.as_str()) == Some(name.as_str())
+            {
+                c_end += 1;
+            }
+            for rr in r..=r_end {
+                for cc in c..=c_end {
+                    if rows[rr].get(cc).map(|s| s.as_str()) == Some(name.as_str()) {
+                        used[rr][cc] = true;
+                    }
+                }
+            }
+            areas.push(taffy::GridTemplateArea {
+                name: name.clone(),
+                row_start: r as u16,
+                row_end: r_end as u16 + 1,
+                column_start: c as u16,
+                column_end: c_end as u16 + 1,
+            });
+        }
+    }
+
+    Some(taffy::GridTemplateAreas {
+        areas,
+        row_count,
+        column_count,
+    })
+}
+
+/// Split "start end" into names for one track.
+fn parse_line_names(css: &str) -> Vec<String> {
+    css.split_whitespace()
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .collect()
+}
+
 fn parse_align_items(s: &str) -> AlignItems {
     parse_or(s, AlignItems::NORMAL)
 }
@@ -403,25 +599,20 @@ fn to_taffy_style(s: &ffi::NodeStyle) -> Style {
         flex_grow: s.flex_grow as f32,
         flex_shrink: s.flex_shrink as f32,
         grid_auto_flow: parse_or(&s.grid_auto_flow, GridAutoFlow::Row),
-        grid_template_rows: s
-            .grid_template_rows
+        grid_template_rows: parse_grid_template(&s.grid_template_rows),
+        grid_template_columns: parse_grid_template(&s.grid_template_columns),
+        grid_auto_rows: parse_auto_tracks(&s.grid_auto_rows),
+        grid_auto_columns: parse_auto_tracks(&s.grid_auto_columns),
+        grid_template_areas: parse_grid_areas(&s.grid_template_areas),
+        grid_template_row_names: s
+            .grid_template_row_names
             .iter()
-            .map(|t| GridTemplateComponent::Single(parse_track(&t.min, &t.max)))
+            .map(|n| parse_line_names(n))
             .collect(),
-        grid_template_columns: s
-            .grid_template_columns
+        grid_template_column_names: s
+            .grid_template_column_names
             .iter()
-            .map(|t| GridTemplateComponent::Single(parse_track(&t.min, &t.max)))
-            .collect(),
-        grid_auto_rows: s
-            .grid_auto_rows
-            .iter()
-            .map(|t| parse_track(&t.min, &t.max))
-            .collect(),
-        grid_auto_columns: s
-            .grid_auto_columns
-            .iter()
-            .map(|t| parse_track(&t.min, &t.max))
+            .map(|n| parse_line_names(n))
             .collect(),
         grid_row: parse_line(&s.grid_row.start, &s.grid_row.end),
         grid_column: parse_line(&s.grid_column.start, &s.grid_column.end),

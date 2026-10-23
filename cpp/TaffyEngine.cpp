@@ -66,33 +66,18 @@ namespace {
     o.flex_grow = s.flexGrow;
     o.flex_shrink = s.flexShrink;
     o.grid_auto_flow = s.gridAutoFlow;
-    o.grid_template_rows = {};
-    for (const auto& t : s.gridTemplateRows) {
-        ::TrackSize ts;
-        ts.min = t.min;
-        ts.max = t.max;
-        o.grid_template_rows.push_back(ts);
+    o.grid_template_rows = s.gridTemplateRows;
+    o.grid_template_columns = s.gridTemplateColumns;
+    o.grid_auto_rows = s.gridAutoRows;
+    o.grid_auto_columns = s.gridAutoColumns;
+    o.grid_template_areas = s.gridTemplateAreas;
+    o.grid_template_row_names = {};
+    for (const auto& n : s.gridTemplateRowNames) {
+        o.grid_template_row_names.push_back(n);
     }
-    o.grid_template_columns = {};
-    for (const auto& t : s.gridTemplateColumns) {
-        ::TrackSize ts;
-        ts.min = t.min;
-        ts.max = t.max;
-        o.grid_template_columns.push_back(ts);
-    }
-    o.grid_auto_rows = {};
-    for (const auto& t : s.gridAutoRows) {
-        ::TrackSize ts;
-        ts.min = t.min;
-        ts.max = t.max;
-        o.grid_auto_rows.push_back(ts);
-    }
-    o.grid_auto_columns = {};
-    for (const auto& t : s.gridAutoColumns) {
-        ::TrackSize ts;
-        ts.min = t.min;
-        ts.max = t.max;
-        o.grid_auto_columns.push_back(ts);
+    o.grid_template_column_names = {};
+    for (const auto& n : s.gridTemplateColumnNames) {
+        o.grid_template_column_names.push_back(n);
     }
     o.grid_row.start = s.gridRow.start;
     o.grid_row.end = s.gridRow.end;
