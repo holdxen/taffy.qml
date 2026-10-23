@@ -2,21 +2,18 @@ cmake_minimum_required(VERSION 3.24)
 
 project(taffy
     VERSION 0.1.0
-    DESCRIPTION "Qt Quick item library with Rust (cxx-qt) layout engine"
+    DESCRIPTION "Qt Quick item library; layout math in Rust (cxx + taffy)"
     LANGUAGES CXX
 )
 
 set(CMAKE_PREFIX_PATH "/usr/local/qt6")
 
-# When consumed via FetchContent / add_subdirectory, don't pollute the parent.
 if(NOT DEFINED PROJECT_NAME OR CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(TAFFY_IS_TOP_LEVEL ON)
 else()
     set(TAFFY_IS_TOP_LEVEL OFF)
 endif()
 
-# Rust always links the non-debug Windows runtime on *-msvc.
-# Must be consistent across the whole program.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 endif()
@@ -26,7 +23,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 # --------------------------------------------------------------------
-# Qt 6 only (Qt 5 is not supported)
+# Qt 6 (C++ only — the Rust crate does not use Qt)
 # --------------------------------------------------------------------
 find_package(Qt6 REQUIRED COMPONENTS
     Core
@@ -34,67 +31,55 @@ find_package(Qt6 REQUIRED COMPONENTS
     Qml
     Quick
     QuickControls2
-    # Private modules are for the C++ target only.
-    # They must NOT go into cxx_qt_import_crate(QT_MODULES ...).
     QuickPrivate
-    QuickLayouts
-    QuickLayoutsPrivate
 )
 
 if(MSVC)
     set_property(TARGET
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Qml
-        Qt6::Quick
-        Qt6::QuickControls2
-        Qt6::QuickPrivate
-        Qt6::QuickLayouts
-        Qt6::QuickLayoutsPrivate
+        Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::QuickPrivate
         PROPERTY MAP_IMPORTED_CONFIG_DEBUG "RELEASE")
 endif()
 
 # --------------------------------------------------------------------
-# CXX-Qt (Corrosion wrappers)
-# Prefer an installed package; fall back to FetchContent.
+# Rust staticlib via Corrosion + cxx (no cxx-qt)
 # --------------------------------------------------------------------
-find_package(CxxQt QUIET)
-if(NOT CxxQt_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(CxxQt
-        GIT_REPOSITORY https://github.com/kdab/cxx-qt-cmake.git
-        GIT_TAG 0.10.0
-    )
-    FetchContent_MakeAvailable(CxxQt)
-endif()
+include(FetchContent)
+FetchContent_Declare(Corrosion
+    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    GIT_TAG v0.5.2
+)
+FetchContent_MakeAvailable(Corrosion)
 
-# --------------------------------------------------------------------
-# Rust crate (staticlib + generated C++/headers via cxx-qt)
-# --------------------------------------------------------------------
-# Public Qt modules only. Private modules (*Private) have no .prl and will
-# panic in qt-build-utils if listed here. Link them on the C++ target instead.
-cxx_qt_import_crate(
+corrosion_import_crate(
     MANIFEST_PATH rust/Cargo.toml
     CRATES taffy_rust
     LOCKED
-    QT_MODULES
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Qml
-        Qt6::Quick
-        Qt6::QuickControls2
 )
 
+# cxx generated headers (lib.rs.h / lib.rs.cc glue already in the staticlib)
+# corrosion_add_cxxbridge creates an interface with the right include path.
+if(COMMAND corrosion_add_cxxbridge)
+    corrosion_add_cxxbridge(taffy_cxxbridge
+        CRATE taffy_rust
+        FILES lib.rs
+    )
+else()
+    # Fallback: locate OUT_DIR headers after first build via CARGO_TARGET_DIR
+    set_target_properties(taffy_rust PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+        "${CMAKE_CURRENT_BINARY_DIR}/corrosion")
+endif()
+
 # --------------------------------------------------------------------
-# C++ library: QQuickItem shell + public headers
+# C++ library — owns all Qt API
 # --------------------------------------------------------------------
 add_library(taffy
     cpp/Taffy.cpp
+    cpp/TaffyEngine.cpp
     cpp/TaffyItem.cpp
-    cpp/TaffyAttached.cpp
     include/taffy/Taffy.h
+    include/taffy/TaffyEngine.h
     include/taffy/TaffyItem.h
-    include/taffy/TaffyAttached.h
+    include/taffy/TaffyTypes.h
 )
 add_library(taffy::taffy ALIAS taffy)
 
@@ -112,21 +97,13 @@ target_link_libraries(taffy
         Qt6::Quick
     PRIVATE
         Qt6::QuickPrivate
-        Qt6::QuickLayouts
-        Qt6::QuickLayoutsPrivate
         taffy_rust
 )
 
-# Generated cxx-qt headers live under the rust crate export dir.
-# Expose them only to this library's sources (not the public API).
-target_include_directories(taffy
-    PRIVATE
-        $<TARGET_PROPERTY:taffy_rust,INTERFACE_INCLUDE_DIRECTORIES>
-)
+if(TARGET taffy_cxxbridge)
+    target_link_libraries(taffy PRIVATE taffy_cxxbridge)
+endif()
 
-# --------------------------------------------------------------------
-# Example (only when built as top-level)
-# --------------------------------------------------------------------
 if(TAFFY_IS_TOP_LEVEL)
     add_subdirectory(examples/minimal)
 endif()
