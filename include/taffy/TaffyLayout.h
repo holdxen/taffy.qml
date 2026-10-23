@@ -108,6 +108,7 @@ public:
     void setDirection(const QString& v);
 
     void componentComplete() override;
+    void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
     void invalidate(QQuickItem* childItem = nullptr) override;
     QSizeF sizeHint(Qt::SizeHint whichSizeHint) const override;
     void setAlignment(QQuickItem* item, Qt::Alignment align) override;

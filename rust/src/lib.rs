@@ -179,10 +179,18 @@ fn parse_available_space(s: &str) -> TAvailableSpace {
 }
 
 fn parse_dim(s: &str) -> Dimension {
+    let s = s.trim();
     if s.is_empty() {
         return Dimension::auto();
     }
-    Dimension::from_str(s).unwrap_or_else(|_| Dimension::auto())
+    if let Ok(d) = Dimension::from_str(s) {
+        return d;
+    }
+    // Bare number → px (e.g. "100")
+    if let Ok(v) = s.parse::<f32>() {
+        return Dimension::length(v);
+    }
+    Dimension::auto()
 }
 
 fn parse_lp(s: &str) -> LengthPercentage {
@@ -199,6 +207,10 @@ fn parse_lp(s: &str) -> LengthPercentage {
         }
     }
     if let Ok(v) = s.parse::<f32>() {
+        return length(v);
+    }
+    // "100" style
+    if let Ok(v) = s.trim().parse::<f32>() {
         return length(v);
     }
     length(0.0)

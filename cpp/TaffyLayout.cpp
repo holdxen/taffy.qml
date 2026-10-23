@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include <QDebug>
 #include <QtQml/qqml.h>
 #include <QtQuick/private/qquickanchors_p.h>
 #include <QtQuick/private/qquickitem_p.h>
@@ -18,6 +19,25 @@ namespace {
 std::string toStd(const QString& s)
 {
     return s.toStdString();
+}
+
+// Accept "100" as well as "100px" for length-like values.
+std::string lengthCss(const QString& s)
+{
+    QString t = s.trimmed();
+    if (t.isEmpty() || t == QLatin1String("auto")
+        || t == QLatin1String("min-content") || t == QLatin1String("max-content")
+        || t == QLatin1String("stretch") || t == QLatin1String("content")
+        || t == QLatin1String("fit-content") || t.endsWith(QLatin1String("%"))
+        || t.endsWith(QLatin1String("px")) || t.endsWith(QLatin1String("fr"))) {
+        return t.toStdString();
+    }
+    bool ok = false;
+    t.toDouble(&ok);
+    if (ok) {
+        return t.toStdString() + "px";
+    }
+    return t.toStdString();
 }
 
 } // namespace
@@ -76,7 +96,10 @@ void TaffyLayout::componentComplete()
     if (qobject_cast<QQuickLayout*>(parentItem())) {
         return;
     }
-    rearrange(QSizeF(width(), height()));
+    // Anchors may not be resolved yet (e.g. anchors.fill → negative margins).
+    if (width() > 0 && height() > 0) {
+        rearrange(QSizeF(width(), height()));
+    }
 }
 
 QString TaffyLayout::display() const
@@ -440,18 +463,18 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     const QString h = attached->height();
     s.size.width = (w == QLatin1String("auto") || w.isEmpty())
                        ? std::to_string(fallbackW) + "px"
-                       : toStd(w);
+                       : lengthCss(w);
     s.size.height = (h == QLatin1String("auto") || h.isEmpty())
                         ? std::to_string(fallbackH) + "px"
-                        : toStd(h);
+                        : lengthCss(h);
 
-    s.minSize.width = toStd(attached->minWidth());
-    s.minSize.height = toStd(attached->minHeight());
-    s.maxSize.width = toStd(attached->maxWidth());
-    s.maxSize.height = toStd(attached->maxHeight());
+    s.minSize.width = lengthCss(attached->minWidth());
+    s.minSize.height = lengthCss(attached->minHeight());
+    s.maxSize.width = lengthCss(attached->maxWidth());
+    s.maxSize.height = lengthCss(attached->maxHeight());
     s.aspectRatio = attached->aspectRatio();
 
-    s.flexBasis = toStd(attached->flexBasis());
+    s.flexBasis = lengthCss(attached->flexBasis());
     s.flexGrow = attached->flexGrow();
     s.flexShrink = attached->flexShrink();
 
@@ -474,10 +497,10 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     s.border.left = std::to_string(attached->borderLeft()) + "px";
 
     s.position = toStd(attached->position());
-    s.inset.top = toStd(attached->insetTop());
-    s.inset.right = toStd(attached->insetRight());
-    s.inset.bottom = toStd(attached->insetBottom());
-    s.inset.left = toStd(attached->insetLeft());
+    s.inset.top = lengthCss(attached->insetTop());
+    s.inset.right = lengthCss(attached->insetRight());
+    s.inset.bottom = lengthCss(attached->insetBottom());
+    s.inset.left = lengthCss(attached->insetLeft());
 
     s.gridRow.start = toStd(attached->gridRow());
     s.gridColumn.start = toStd(attached->gridColumn());
@@ -523,6 +546,17 @@ void TaffyLayout::itemSiblingOrderChanged(QQuickItem* item)
         return;
     // childItems() order is the layout order — just rebuild.
     invalidate(item);
+}
+
+void TaffyLayout::geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry)
+{
+    QQuickLayout::geometryChange(newGeometry, oldGeometry);
+    // Base skips rearrange when invalidated(); if size just became valid we must
+    // still lay out (e.g. anchors.fill resolved after componentComplete).
+    if (!isReady())
+        return;
+    if (newGeometry.width() > 0 && newGeometry.height() > 0)
+        rearrange(newGeometry.size());
 }
 
 void TaffyLayout::itemChange(ItemChange change, const ItemChangeData& value)
@@ -583,8 +617,10 @@ void TaffyLayout::applyChildGeometry(QQuickItem* child, const taffy::Layout& l)
     const QSizeF oldSize = child->size();
     const QSizeF newSize(l.size.width, l.size.height);
 
+    child->setX(l.location.x);
+    child->setY(l.location.y);
+
     if (oldSize == newSize) {
-        child->setPosition(QPointF(l.location.x, l.location.y));
         // Nested layout: size unchanged but it may still need to rearrange.
         if (auto* layout = qobject_cast<QQuickLayout*>(child)) {
             if (layout->invalidatedArrangement()) {
@@ -592,8 +628,11 @@ void TaffyLayout::applyChildGeometry(QQuickItem* child, const taffy::Layout& l)
             }
         }
     } else {
-        child->setPosition(QPointF(l.location.x, l.location.y));
-        child->setSize(newSize);
+        child->setWidth(newSize.width());
+        child->setHeight(newSize.height());
+        if (auto* layout = qobject_cast<QQuickLayout*>(child)) {
+            layout->rearrange(newSize);
+        }
     }
 }
 
@@ -650,6 +689,14 @@ QSizeF TaffyLayout::sizeHint(Qt::SizeHint whichSizeHint) const
 
 void TaffyLayout::rearrange(const QSizeF& size)
 {
+    // Same guard as QQuickFlexboxLayout::rearrange — never feed taffy a bogus size.
+    if (!size.isValid() || size.width() < 0 || size.height() < 0) {
+        return;
+    }
+    if (size.width() == 0 || size.height() == 0) {
+        return;
+    }
+
     m_engine.clear();
     const unsigned root = m_engine.addNode(containerStyle(size));
 

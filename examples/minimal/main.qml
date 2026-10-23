@@ -13,16 +13,19 @@ ApplicationWindow {
         anchors.fill: parent
         anchors.margins: 24
         display: "flex"
-        flexDirection: "column"
-        gapHeight: 8
+        flexDirection: "row"
+        gapWidth: 8
+
+        Text {
+            text: 'ok =================='
+            color: 'black'
+            TaffyLayout.flexShrink: 0
+        }
 
         Rectangle {
-            color: "#22c55e"
-            TaffyLayout.height: "40px"
-        }
-        Rectangle {
-            color: "#f59e0b"
-            TaffyLayout.height: "40px"
+            color: 'red'
+            TaffyLayout.width: '200px'
+            TaffyLayout.height: '100px'
             TaffyLayout.flexGrow: 1
         }
     }
