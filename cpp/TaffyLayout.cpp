@@ -428,7 +428,7 @@ taffy::Style TaffyLayout::containerStyle(const QSizeF& size) const
     s.display = toStd(m_display);
     s.flexDirection = toStd(m_flexDirection);
     s.flexWrap = toStd(m_flexWrap);
-    s.flexLineCount = unsigned(std::max(1, m_flexLineCount));
+    s.flexLineCount = std::uint32_t(std::max(1, m_flexLineCount));
     s.alignItems = toStd(m_alignItems);
     s.alignContent = toStd(m_alignContent);
     s.justifyContent = toStd(m_justifyContent);
@@ -698,10 +698,10 @@ QSizeF TaffyLayout::sizeHint(Qt::SizeHint whichSizeHint) const
     static const Qt::SizeHint kAll[] = { Qt::MinimumSize, Qt::PreferredSize, Qt::MaximumSize };
     for (Qt::SizeHint which : kAll) {
         m_engine.clear();
-        const unsigned r = m_engine.addNode(containerStyle(QSizeF()));
+        const std::uint32_t r = m_engine.addNode(containerStyle(QSizeF()));
         for (int i = 0; i < n; ++i) {
             QQuickItem* child = itemAt(i);
-            const unsigned node = m_engine.addNode(itemStyle(child));
+            const std::uint32_t node = m_engine.addNode(itemStyle(child));
             m_engine.addChild(r, node);
         }
 
@@ -743,14 +743,14 @@ void TaffyLayout::rearrange(const QSizeF& size)
     }
 
     m_engine.clear();
-    const unsigned root = m_engine.addNode(containerStyle(size));
+    const std::uint32_t root = m_engine.addNode(containerStyle(size));
 
     QList<QQuickItem*> layoutItems;
     const int n = itemCount();
     for (int i = 0; i < n; ++i) {
         QQuickItem* child = itemAt(i);
         layoutItems.append(child);
-        const unsigned node = m_engine.addNode(itemStyle(child));
+        const std::uint32_t node = m_engine.addNode(itemStyle(child));
         m_engine.addChild(root, node);
     }
 
@@ -760,7 +760,7 @@ void TaffyLayout::rearrange(const QSizeF& size)
 
     for (int i = 0; i < layoutItems.size(); ++i) {
         taffy::Layout l;
-        if (m_engine.layout(unsigned(i + 1), l)) {
+        if (m_engine.layout(std::uint32_t(i + 1), l)) {
             applyChildGeometry(layoutItems[i], l);
         }
     }
