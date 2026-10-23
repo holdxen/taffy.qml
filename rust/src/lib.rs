@@ -33,8 +33,8 @@ pub mod ffi {
     }
 
     struct AvailableSpace {
-        kind: i32,
-        value: f64,
+        /// "100px" | "min-content" | "max-content"
+        css: String,
     }
 
     /// CSS-like length: "auto" | "100px" | "50%" | "min-content" | "max-content" | "0"
@@ -145,6 +145,32 @@ pub mod ffi {
 
 fn parse_or<T: FromStr>(s: &str, fallback: T) -> T {
     s.parse().unwrap_or(fallback)
+}
+
+fn parse_available_space(s: &str) -> TAvailableSpace {
+    let s = s.trim();
+    match s {
+        "min-content" => TAvailableSpace::MinContent,
+        "max-content" => TAvailableSpace::MaxContent,
+        _ => {
+            if let Some(v) = s.strip_suffix("px") {
+                if let Ok(v) = v.trim().parse::<f32>() {
+                    return TAvailableSpace::Definite(v);
+                }
+            }
+            if let Some(p) = s.strip_suffix('%') {
+                if let Ok(v) = p.trim().parse::<f32>() {
+                    // percent has no parent size at compute() — treat as 0
+                    let _ = v;
+                    return TAvailableSpace::Definite(0.0);
+                }
+            }
+            if let Ok(v) = s.parse::<f32>() {
+                return TAvailableSpace::Definite(v);
+            }
+            TAvailableSpace::MinContent
+        }
+    }
 }
 
 fn parse_dim(s: &str) -> Dimension {
@@ -448,11 +474,7 @@ impl TaffyEngine {
         let Some(&root) = self.nodes.first() else {
             return Ok(());
         };
-        let avail = |v: &ffi::AvailableSpace| match v.kind {
-            1 => TAvailableSpace::MinContent,
-            2 => TAvailableSpace::MaxContent,
-            _ => TAvailableSpace::Definite(v.value as f32),
-        };
+        let avail = |v: &ffi::AvailableSpace| parse_available_space(&v.css);
         let size = TSize {
             width: avail(width),
             height: avail(height),

@@ -149,11 +149,9 @@ bool Engine::setStyle(unsigned node, const Style& style)
 bool Engine::compute(const AvailableSpace& width, const AvailableSpace& height)
 {
     ::AvailableSpace w;
-    w.kind = static_cast<int32_t>(width.kind);
-    w.value = width.value;
+    w.css = width.css;
     ::AvailableSpace h;
-    h.kind = static_cast<int32_t>(height.kind);
-    h.value = height.value;
+    h.css = height.css;
     try {
         d->engine->engine_compute(w, h);
         return true;

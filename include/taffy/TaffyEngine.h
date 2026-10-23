@@ -40,34 +40,38 @@ struct Layout
     Size scrollbarSize;
 };
 
+/**
+ * Available space on one axis, CSS-like:
+ *   "100px" / "100"  — definite
+ *   "min-content"    — min-content
+ *   "max-content"    — max-content
+ */
 struct AvailableSpace
 {
-    enum class Kind {
-        Definite,
-        MinContent,
-        MaxContent,
-    };
-
-    Kind kind = Kind::Definite;
-    double value = 0.0;
+    std::string css = "auto";
 
     static AvailableSpace definite(double v)
     {
         AvailableSpace s;
-        s.kind = Kind::Definite;
-        s.value = v;
+        s.css = std::to_string(v) + "px";
         return s;
     }
     static AvailableSpace minContent()
     {
         AvailableSpace s;
-        s.kind = Kind::MinContent;
+        s.css = "min-content";
         return s;
     }
     static AvailableSpace maxContent()
     {
         AvailableSpace s;
-        s.kind = Kind::MaxContent;
+        s.css = "max-content";
+        return s;
+    }
+    static AvailableSpace parse(const std::string& css)
+    {
+        AvailableSpace s;
+        s.css = css;
         return s;
     }
 };
