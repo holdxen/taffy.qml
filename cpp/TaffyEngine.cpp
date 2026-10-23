@@ -5,6 +5,98 @@
 
 namespace taffy {
 
+namespace {
+
+::LengthValue toFfi(const LengthValue& v)
+{
+    ::LengthValue o;
+    o.kind = v.kind;
+    o.value = v.value;
+    return o;
+}
+
+::LengthSize toFfi(const LengthSize& s)
+{
+    ::LengthSize o;
+    o.width = toFfi(s.width);
+    o.height = toFfi(s.height);
+    return o;
+}
+
+::LengthRect toFfi(const LengthRect& r)
+{
+    ::LengthRect o;
+    o.left = toFfi(r.left);
+    o.right = toFfi(r.right);
+    o.top = toFfi(r.top);
+    o.bottom = toFfi(r.bottom);
+    return o;
+}
+
+::Placement toFfi(const Placement& p)
+{
+    ::Placement o;
+    o.kind = p.kind;
+    o.value = p.value;
+    return o;
+}
+
+::LinePlacement toFfi(const LinePlacement& p)
+{
+    ::LinePlacement o;
+    o.start = toFfi(p.start);
+    o.end = toFfi(p.end);
+    return o;
+}
+
+::NodeStyle toFfi(const Style& s)
+{
+    ::NodeStyle o;
+    o.display = s.display;
+    o.item_is_table = s.itemIsTable;
+    o.item_is_replaced = s.itemIsReplaced;
+    o.item_is_compressible_replaced = s.itemIsCompressibleReplaced;
+    o.box_sizing = s.boxSizing;
+    o.direction = s.direction;
+    o.overflow_x = s.overflowX;
+    o.overflow_y = s.overflowY;
+    o.scrollbar_width = s.scrollbarWidth;
+    o.contain = s.contain;
+    o.css_float = s.cssFloat;
+    o.clear = s.clear;
+    o.position = s.position;
+    o.inset = toFfi(s.inset);
+    o.size = toFfi(s.size);
+    o.min_size = toFfi(s.minSize);
+    o.max_size = toFfi(s.maxSize);
+    o.aspect_ratio = s.aspectRatio;
+    o.margin = toFfi(s.margin);
+    o.padding = toFfi(s.padding);
+    o.border = toFfi(s.border);
+    o.align_items = s.alignItems;
+    o.has_align_self = s.hasAlignSelf;
+    o.align_self = s.alignSelf;
+    o.justify_items = s.justifyItems;
+    o.has_justify_self = s.hasJustifySelf;
+    o.justify_self = s.justifySelf;
+    o.align_content = s.alignContent;
+    o.justify_content = s.justifyContent;
+    o.gap = toFfi(s.gap);
+    o.text_align = s.textAlign;
+    o.flex_direction = s.flexDirection;
+    o.flex_wrap = s.flexWrap;
+    o.flex_line_count = s.flexLineCount;
+    o.flex_basis = toFfi(s.flexBasis);
+    o.flex_grow = s.flexGrow;
+    o.flex_shrink = s.flexShrink;
+    o.grid_auto_flow = s.gridAutoFlow;
+    o.grid_row = toFfi(s.gridRow);
+    o.grid_column = toFfi(s.gridColumn);
+    return o;
+}
+
+} // namespace
+
 class EngineImpl
 {
 public:
@@ -20,23 +112,12 @@ Engine::~Engine() = default;
 
 quint32 Engine::addNode()
 {
-    ::NodeStyle style;
-    style.display = static_cast<int32_t>(Display::Flex);
-    style.position = static_cast<int32_t>(Position::Static);
-    style.flex_direction = static_cast<int32_t>(FlexDirection::Row);
-    style.flex_wrap = static_cast<int32_t>(FlexWrap::NoWrap);
-    style.align_items = static_cast<int32_t>(AlignItems::Normal);
-    style.align_content = static_cast<int32_t>(AlignContent::Normal);
-    style.justify_content = static_cast<int32_t>(AlignContent::Normal);
-    style.overflow_x = static_cast<int32_t>(Overflow::Visible);
-    style.overflow_y = static_cast<int32_t>(Overflow::Visible);
-    style.box_sizing = static_cast<int32_t>(BoxSizing::BorderBox);
-    style.direction = static_cast<int32_t>(StyleDirection::Ltr);
-    style.width = std::numeric_limits<double>::quiet_NaN();
-    style.height = std::numeric_limits<double>::quiet_NaN();
-    style.flex_grow = 0.0;
-    style.flex_shrink = 1.0;
-    return d->engine->engine_add_node(style);
+    return addNode(Style{});
+}
+
+quint32 Engine::addNode(const Style& style)
+{
+    return d->engine->engine_add_node(toFfi(style));
 }
 
 bool Engine::addChild(quint32 parent, quint32 child)
@@ -49,34 +130,10 @@ bool Engine::addChild(quint32 parent, quint32 child)
     }
 }
 
-bool Engine::setStyle(quint32 node,
-                      Display display,
-                      FlexDirection flexDirection,
-                      FlexWrap flexWrap,
-                      AlignItems alignItems,
-                      AlignContent alignContent,
-                      AlignContent justifyContent,
-                      qreal width, qreal height,
-                      qreal flexGrow, qreal flexShrink)
+bool Engine::setStyle(quint32 node, const Style& style)
 {
-    ::NodeStyle style;
-    style.display = static_cast<int32_t>(display);
-    style.position = static_cast<int32_t>(Position::Static);
-    style.flex_direction = static_cast<int32_t>(flexDirection);
-    style.flex_wrap = static_cast<int32_t>(flexWrap);
-    style.align_items = static_cast<int32_t>(alignItems);
-    style.align_content = static_cast<int32_t>(alignContent);
-    style.justify_content = static_cast<int32_t>(justifyContent);
-    style.overflow_x = static_cast<int32_t>(Overflow::Visible);
-    style.overflow_y = static_cast<int32_t>(Overflow::Visible);
-    style.box_sizing = static_cast<int32_t>(BoxSizing::BorderBox);
-    style.direction = static_cast<int32_t>(StyleDirection::Ltr);
-    style.width = width;
-    style.height = height;
-    style.flex_grow = flexGrow;
-    style.flex_shrink = flexShrink;
     try {
-        d->engine->engine_set_style(node, style);
+        d->engine->engine_set_style(node, toFfi(style));
         return true;
     } catch (...) {
         return false;
