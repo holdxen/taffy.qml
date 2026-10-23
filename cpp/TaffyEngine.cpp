@@ -120,14 +120,29 @@ bool Engine::compute(qreal availableWidth, qreal availableHeight)
     }
 }
 
-bool Engine::layout(quint32 node, qreal& x, qreal& y, qreal& w, qreal& h) const
+bool Engine::layout(quint32 node, Layout& out) const
 {
     try {
-        const ::LayoutRect r = d->engine->engine_layout(node);
-        x = r.x;
-        y = r.y;
-        w = r.width;
-        h = r.height;
+        const ::Layout l = d->engine->engine_layout(node);
+        out.order = l.order;
+        out.location.x = l.location.x;
+        out.location.y = l.location.y;
+        out.size.width = l.size.width;
+        out.size.height = l.size.height;
+        out.border.left = l.border.left;
+        out.border.right = l.border.right;
+        out.border.top = l.border.top;
+        out.border.bottom = l.border.bottom;
+        out.padding.left = l.padding.left;
+        out.padding.right = l.padding.right;
+        out.padding.top = l.padding.top;
+        out.padding.bottom = l.padding.bottom;
+        out.margin.left = l.margin.left;
+        out.margin.right = l.margin.right;
+        out.margin.top = l.margin.top;
+        out.margin.bottom = l.margin.bottom;
+        out.scrollbarSize.width = l.scrollbar_size.width;
+        out.scrollbarSize.height = l.scrollbar_size.height;
         return true;
     } catch (...) {
         return false;

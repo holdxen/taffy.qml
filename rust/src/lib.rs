@@ -93,11 +93,35 @@ pub mod ffi {
     }
 
     #[derive(Debug, Clone, Copy)]
-    struct LayoutRect {
+    struct Point {
         x: f64,
         y: f64,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    struct Size {
         width: f64,
         height: f64,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    struct Rect {
+        left: f64,
+        right: f64,
+        top: f64,
+        bottom: f64,
+    }
+
+    /// Mirrors `taffy::Layout` (without feature-gated fields).
+    #[derive(Debug, Clone, Copy)]
+    struct Layout {
+        order: u32,
+        location: Point,
+        size: Size,
+        border: Rect,
+        padding: Rect,
+        margin: Rect,
+        scrollbar_size: Size,
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -131,7 +155,7 @@ pub mod ffi {
             available_width: f64,
             available_height: f64,
         ) -> Result<()>;
-        fn engine_layout(self: &TaffyEngine, node: u32) -> Result<LayoutRect>;
+        fn engine_layout(self: &TaffyEngine, node: u32) -> Result<Layout>;
         fn engine_clear(self: &mut TaffyEngine);
     }
 }
@@ -324,14 +348,41 @@ impl TaffyEngine {
         self.tree.compute_layout(root, size).map_err(taffy_err)
     }
 
-    fn engine_layout(&self, node: u32) -> Result<ffi::LayoutRect, String> {
+    fn engine_layout(&self, node: u32) -> Result<ffi::Layout, String> {
         let n = self.node(node)?;
         let l = self.tree.layout(n).map_err(taffy_err)?;
-        Ok(ffi::LayoutRect {
-            x: l.location.x as f64,
-            y: l.location.y as f64,
-            width: l.size.width as f64,
-            height: l.size.height as f64,
+        Ok(ffi::Layout {
+            order: l.order,
+            location: ffi::Point {
+                x: l.location.x as f64,
+                y: l.location.y as f64,
+            },
+            size: ffi::Size {
+                width: l.size.width as f64,
+                height: l.size.height as f64,
+            },
+            border: ffi::Rect {
+                left: l.border.left as f64,
+                right: l.border.right as f64,
+                top: l.border.top as f64,
+                bottom: l.border.bottom as f64,
+            },
+            padding: ffi::Rect {
+                left: l.padding.left as f64,
+                right: l.padding.right as f64,
+                top: l.padding.top as f64,
+                bottom: l.padding.bottom as f64,
+            },
+            margin: ffi::Rect {
+                left: l.margin.left as f64,
+                right: l.margin.right as f64,
+                top: l.margin.top as f64,
+                bottom: l.margin.bottom as f64,
+            },
+            scrollbar_size: ffi::Size {
+                width: l.scrollbar_size.width as f64,
+                height: l.scrollbar_size.height as f64,
+            },
         })
     }
 

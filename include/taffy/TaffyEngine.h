@@ -6,11 +6,43 @@
 
 namespace taffy {
 
-// Forward-declared to avoid leaking cxx headers into every consumer.
 class EngineImpl;
 
+/** Geometry in abstract layout units (usually pixels). */
+struct Rect
+{
+    double left = 0.0;
+    double right = 0.0;
+    double top = 0.0;
+    double bottom = 0.0;
+};
+
+struct Size
+{
+    double width = 0.0;
+    double height = 0.0;
+};
+
+struct Point
+{
+    double x = 0.0;
+    double y = 0.0;
+};
+
+/** Mirrors taffy::Layout (without feature-gated fields). */
+struct Layout
+{
+    quint32 order = 0;
+    Point location;
+    Size size;
+    Rect border;
+    Rect padding;
+    Rect margin;
+    Size scrollbarSize;
+};
+
 /**
- * C++ facade over the Rust taffy engine (cxx). Qt-free except TaffyTypes enums.
+ * C++ facade over the Rust taffy engine (cxx).
  */
 class Engine
 {
@@ -32,7 +64,7 @@ public:
                   qreal width, qreal height,
                   qreal flexGrow = 0.0, qreal flexShrink = 1.0);
     bool compute(qreal availableWidth, qreal availableHeight);
-    bool layout(quint32 node, qreal& x, qreal& y, qreal& w, qreal& h) const;
+    bool layout(quint32 node, Layout& out) const;
     void clear();
 
 private:
