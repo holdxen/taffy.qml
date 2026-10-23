@@ -139,6 +139,8 @@ private:
     taffy::Style containerStyle(const QSizeF& size) const;
     taffy::Style itemStyle(QQuickItem* child) const;
     void watchItemStyle(QQuickItem* child) const;
+    /** Sync implicitWidth/Height (and Layout min/max) like QQuickLayout::applySizeHints. */
+    void applySizeHintsToItem();
     void onItemStyleChanged();
     static void checkItemAnchors(QQuickItem* item);
     static void applyChildGeometry(QQuickItem* child, const taffy::Layout& layout);
