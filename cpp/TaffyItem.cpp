@@ -11,12 +11,12 @@ TaffyItem::TaffyItem(QQuickItem* parent)
 
 TaffyItem::~TaffyItem() = default;
 
-TaffyTypes::Display TaffyItem::display() const
+Display TaffyItem::display() const
 {
     return m_display;
 }
 
-void TaffyItem::setDisplay(TaffyTypes::Display display)
+void TaffyItem::setDisplay(Display display)
 {
     if (m_display == display) {
         return;
@@ -26,12 +26,12 @@ void TaffyItem::setDisplay(TaffyTypes::Display display)
     relayout();
 }
 
-TaffyTypes::FlexDirection TaffyItem::flexDirection() const
+FlexDirection TaffyItem::flexDirection() const
 {
     return m_flexDirection;
 }
 
-void TaffyItem::setFlexDirection(TaffyTypes::FlexDirection direction)
+void TaffyItem::setFlexDirection(FlexDirection direction)
 {
     if (m_flexDirection == direction) {
         return;
@@ -85,10 +85,10 @@ void TaffyItem::relayout()
     m_engine.setStyle(root,
                       m_display,
                       m_flexDirection,
-                      TaffyTypes::FlexWrapNoWrap,
-                      TaffyTypes::AlignItemsKeywordStretch,
-                      TaffyTypes::AlignContentKeywordNormal,
-                      TaffyTypes::AlignContentKeywordNormal,
+                      FlexWrap::NoWrap,
+                      AlignItemsKeyword::Stretch,
+                      AlignContentKeyword::Normal,
+                      AlignContentKeyword::Normal,
                       width(), height());
 
     const auto kids = childItems();
@@ -97,12 +97,12 @@ void TaffyItem::relayout()
         const qreal w = kids[i]->width();
         const qreal h = kids[i]->height();
         m_engine.setStyle(child,
-                          TaffyTypes::DisplayFlex,
-                          TaffyTypes::FlexDirectionRow,
-                          TaffyTypes::FlexWrapNoWrap,
-                          TaffyTypes::AlignItemsKeywordNormal,
-                          TaffyTypes::AlignContentKeywordNormal,
-                          TaffyTypes::AlignContentKeywordNormal,
+                          Display::Flex,
+                          FlexDirection::Row,
+                          FlexWrap::NoWrap,
+                          AlignItemsKeyword::Normal,
+                          AlignContentKeyword::Normal,
+                          AlignContentKeyword::Normal,
                           w > 0 ? w : 100.0,
                           h > 0 ? h : 40.0);
         m_engine.addChild(root, child);

@@ -1,17 +1,23 @@
-//! Export taffy layout types to C++ via cxx. No Qt dependency.
+//! Style enums are exported via cxx-qt `#[qenum]` (auto Q_ENUM for Qt/QML).
+//! Layout engine stays plain `extern "Rust"` (no Qt logic).
 
-use taffy::geometry::{Point, Size};
+use taffy::geometry::{Point as TPoint, Size as TSize};
 use taffy::prelude::{
-    AlignContent, AlignItems, AlignItemsKeyword as TAlignItems, AvailableSpace, BoxSizing,
-    Dimension, Display, FlexDirection, FlexWrap, NodeId, Position, Style,
+    AlignContent, AlignItems, AlignItemsKeyword as TAlignItems, AvailableSpace as TAvailableSpace,
+    BoxSizing, Dimension, Display, FlexDirection, FlexWrap, NodeId, Position, Style,
 };
 use taffy::style::{AlignContentKeyword as TAlignContent, AlignmentSafety, Direction, Overflow};
 use taffy::tree::TaffyError;
 use taffy::TaffyTree;
 
-#[cxx::bridge]
+#[cxx_qt::bridge]
 pub mod ffi {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    extern "RustQt" {
+        #[qobject]
+        type TaffyTypes = super::TaffyTypesRust;
+    }
+
+    #[qenum(TaffyTypes)]
     enum Display {
         Block,
         FlowRoot,
@@ -20,7 +26,7 @@ pub mod ffi {
         None,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[qenum(TaffyTypes)]
     enum Position {
         Static,
         Relative,
@@ -29,7 +35,7 @@ pub mod ffi {
         Sticky,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[qenum(TaffyTypes)]
     enum FlexDirection {
         Row,
         Column,
@@ -37,14 +43,14 @@ pub mod ffi {
         ColumnReverse,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[qenum(TaffyTypes)]
     enum FlexWrap {
         NoWrap,
         Wrap,
         WrapReverse,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[qenum(TaffyTypes)]
     enum AlignItemsKeyword {
         Normal,
         Start,
@@ -58,7 +64,7 @@ pub mod ffi {
         Stretch,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[qenum(TaffyTypes)]
     enum AlignContentKeyword {
         Normal,
         Start,
@@ -72,7 +78,7 @@ pub mod ffi {
         SpaceAround,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[qenum(TaffyTypes)]
     enum Overflow {
         Visible,
         Clip,
@@ -80,16 +86,23 @@ pub mod ffi {
         Scroll,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[qenum(TaffyTypes)]
     enum BoxSizing {
         BorderBox,
         ContentBox,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    enum Direction {
+    #[qenum(TaffyTypes)]
+    enum StyleDirection {
         Ltr,
         Rtl,
+    }
+
+    #[qenum(TaffyTypes)]
+    enum AvailableSpaceKind {
+        Definite,
+        MinContent,
+        MaxContent,
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -112,22 +125,31 @@ pub mod ffi {
         bottom: f64,
     }
 
-    /// How much space is available on an axis (mirrors `taffy::AvailableSpace`).
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    enum AvailableSpaceKind {
-        Definite,
-        MinContent,
-        MaxContent,
-    }
-
     #[derive(Debug, Clone, Copy)]
     struct AvailableSpace {
-        kind: AvailableSpaceKind,
-        /// Only used when `kind == Definite`.
+        kind: i32,
         value: f64,
     }
 
-    /// Mirrors `taffy::Layout` (without feature-gated fields).
+    #[derive(Debug, Clone, Copy)]
+    struct NodeStyle {
+        display: i32,
+        position: i32,
+        flex_direction: i32,
+        flex_wrap: i32,
+        align_items: i32,
+        align_content: i32,
+        justify_content: i32,
+        overflow_x: i32,
+        overflow_y: i32,
+        box_sizing: i32,
+        direction: i32,
+        width: f64,
+        height: f64,
+        flex_grow: f64,
+        flex_shrink: f64,
+    }
+
     #[derive(Debug, Clone, Copy)]
     struct Layout {
         order: u32,
@@ -137,25 +159,6 @@ pub mod ffi {
         padding: Rect,
         margin: Rect,
         scrollbar_size: Size,
-    }
-
-    #[derive(Debug, Clone, Copy)]
-    struct NodeStyle {
-        display: Display,
-        position: Position,
-        flex_direction: FlexDirection,
-        flex_wrap: FlexWrap,
-        align_items: AlignItemsKeyword,
-        align_content: AlignContentKeyword,
-        justify_content: AlignContentKeyword,
-        overflow_x: Overflow,
-        overflow_y: Overflow,
-        box_sizing: BoxSizing,
-        direction: Direction,
-        width: f64,
-        height: f64,
-        flex_grow: f64,
-        flex_shrink: f64,
     }
 
     extern "Rust" {
@@ -175,59 +178,62 @@ pub mod ffi {
     }
 }
 
-fn map_display(v: ffi::Display) -> Display {
+#[derive(Default)]
+pub struct TaffyTypesRust;
+
+fn map_display(v: i32) -> Display {
     match v {
-        ffi::Display::Block => Display::Block,
-        ffi::Display::FlowRoot => Display::FlowRoot,
-        ffi::Display::Flex => Display::Flex,
-        ffi::Display::Grid => Display::Grid,
-        ffi::Display::None => Display::None,
+        0 => Display::Block,
+        1 => Display::FlowRoot,
+        2 => Display::Flex,
+        3 => Display::Grid,
+        4 => Display::None,
         _ => Display::Flex,
     }
 }
 
-fn map_position(v: ffi::Position) -> Position {
+fn map_position(v: i32) -> Position {
     match v {
-        ffi::Position::Static => Position::Static,
-        ffi::Position::Relative => Position::Relative,
-        ffi::Position::Absolute => Position::Absolute,
-        ffi::Position::Fixed => Position::Fixed,
-        ffi::Position::Sticky => Position::Sticky,
+        0 => Position::Static,
+        1 => Position::Relative,
+        2 => Position::Absolute,
+        3 => Position::Fixed,
+        4 => Position::Sticky,
         _ => Position::Static,
     }
 }
 
-fn map_flex_direction(v: ffi::FlexDirection) -> FlexDirection {
+fn map_flex_direction(v: i32) -> FlexDirection {
     match v {
-        ffi::FlexDirection::Row => FlexDirection::Row,
-        ffi::FlexDirection::Column => FlexDirection::Column,
-        ffi::FlexDirection::RowReverse => FlexDirection::RowReverse,
-        ffi::FlexDirection::ColumnReverse => FlexDirection::ColumnReverse,
+        0 => FlexDirection::Row,
+        1 => FlexDirection::Column,
+        2 => FlexDirection::RowReverse,
+        3 => FlexDirection::ColumnReverse,
         _ => FlexDirection::Row,
     }
 }
 
-fn map_flex_wrap(v: ffi::FlexWrap) -> FlexWrap {
+fn map_flex_wrap(v: i32) -> FlexWrap {
     match v {
-        ffi::FlexWrap::NoWrap => FlexWrap::NoWrap,
-        ffi::FlexWrap::Wrap => FlexWrap::Wrap,
-        ffi::FlexWrap::WrapReverse => FlexWrap::WrapReverse,
+        0 => FlexWrap::NoWrap,
+        1 => FlexWrap::Wrap,
+        2 => FlexWrap::WrapReverse,
         _ => FlexWrap::NoWrap,
     }
 }
 
-fn map_align_items(v: ffi::AlignItemsKeyword) -> AlignItems {
+fn map_align_items(v: i32) -> AlignItems {
     let keyword = match v {
-        ffi::AlignItemsKeyword::Normal => TAlignItems::Normal,
-        ffi::AlignItemsKeyword::Start => TAlignItems::Start,
-        ffi::AlignItemsKeyword::End => TAlignItems::End,
-        ffi::AlignItemsKeyword::FlexStart => TAlignItems::FlexStart,
-        ffi::AlignItemsKeyword::FlexEnd => TAlignItems::FlexEnd,
-        ffi::AlignItemsKeyword::SelfStart => TAlignItems::SelfStart,
-        ffi::AlignItemsKeyword::SelfEnd => TAlignItems::SelfEnd,
-        ffi::AlignItemsKeyword::Center => TAlignItems::Center,
-        ffi::AlignItemsKeyword::Baseline => TAlignItems::Baseline,
-        ffi::AlignItemsKeyword::Stretch => TAlignItems::Stretch,
+        0 => TAlignItems::Normal,
+        1 => TAlignItems::Start,
+        2 => TAlignItems::End,
+        3 => TAlignItems::FlexStart,
+        4 => TAlignItems::FlexEnd,
+        5 => TAlignItems::SelfStart,
+        6 => TAlignItems::SelfEnd,
+        7 => TAlignItems::Center,
+        8 => TAlignItems::Baseline,
+        9 => TAlignItems::Stretch,
         _ => TAlignItems::Normal,
     };
     AlignItems {
@@ -236,18 +242,18 @@ fn map_align_items(v: ffi::AlignItemsKeyword) -> AlignItems {
     }
 }
 
-fn map_align_content(v: ffi::AlignContentKeyword) -> AlignContent {
+fn map_align_content(v: i32) -> AlignContent {
     let keyword = match v {
-        ffi::AlignContentKeyword::Normal => TAlignContent::Normal,
-        ffi::AlignContentKeyword::Start => TAlignContent::Start,
-        ffi::AlignContentKeyword::End => TAlignContent::End,
-        ffi::AlignContentKeyword::FlexStart => TAlignContent::FlexStart,
-        ffi::AlignContentKeyword::FlexEnd => TAlignContent::FlexEnd,
-        ffi::AlignContentKeyword::Center => TAlignContent::Center,
-        ffi::AlignContentKeyword::Stretch => TAlignContent::Stretch,
-        ffi::AlignContentKeyword::SpaceBetween => TAlignContent::SpaceBetween,
-        ffi::AlignContentKeyword::SpaceEvenly => TAlignContent::SpaceEvenly,
-        ffi::AlignContentKeyword::SpaceAround => TAlignContent::SpaceAround,
+        0 => TAlignContent::Normal,
+        1 => TAlignContent::Start,
+        2 => TAlignContent::End,
+        3 => TAlignContent::FlexStart,
+        4 => TAlignContent::FlexEnd,
+        5 => TAlignContent::Center,
+        6 => TAlignContent::Stretch,
+        7 => TAlignContent::SpaceBetween,
+        8 => TAlignContent::SpaceEvenly,
+        9 => TAlignContent::SpaceAround,
         _ => TAlignContent::Normal,
     };
     AlignContent {
@@ -256,38 +262,29 @@ fn map_align_content(v: ffi::AlignContentKeyword) -> AlignContent {
     }
 }
 
-fn map_overflow(v: ffi::Overflow) -> Overflow {
+fn map_overflow(v: i32) -> Overflow {
     match v {
-        ffi::Overflow::Visible => Overflow::Visible,
-        ffi::Overflow::Clip => Overflow::Clip,
-        ffi::Overflow::Hidden => Overflow::Hidden,
-        ffi::Overflow::Scroll => Overflow::Scroll,
+        0 => Overflow::Visible,
+        1 => Overflow::Clip,
+        2 => Overflow::Hidden,
+        3 => Overflow::Scroll,
         _ => Overflow::Visible,
     }
 }
 
-fn map_box_sizing(v: ffi::BoxSizing) -> BoxSizing {
+fn map_box_sizing(v: i32) -> BoxSizing {
     match v {
-        ffi::BoxSizing::BorderBox => BoxSizing::BorderBox,
-        ffi::BoxSizing::ContentBox => BoxSizing::ContentBox,
+        0 => BoxSizing::BorderBox,
+        1 => BoxSizing::ContentBox,
         _ => BoxSizing::BorderBox,
     }
 }
 
-fn map_direction(v: ffi::Direction) -> Direction {
+fn map_direction(v: i32) -> Direction {
     match v {
-        ffi::Direction::Ltr => Direction::Ltr,
-        ffi::Direction::Rtl => Direction::Rtl,
+        0 => Direction::Ltr,
+        1 => Direction::Rtl,
         _ => Direction::Ltr,
-    }
-}
-
-fn map_available_space(v: &ffi::AvailableSpace) -> AvailableSpace {
-    match v.kind {
-        ffi::AvailableSpaceKind::Definite => AvailableSpace::Definite(v.value as f32),
-        ffi::AvailableSpaceKind::MinContent => AvailableSpace::MinContent,
-        ffi::AvailableSpaceKind::MaxContent => AvailableSpace::MaxContent,
-        _ => AvailableSpace::Definite(v.value as f32),
     }
 }
 
@@ -296,6 +293,15 @@ fn map_dim(v: f64) -> Dimension {
         Dimension::auto()
     } else {
         Dimension::length(v as f32)
+    }
+}
+
+fn map_available_space(v: &ffi::AvailableSpace) -> TAvailableSpace {
+    match v.kind {
+        0 => TAvailableSpace::Definite(v.value as f32),
+        1 => TAvailableSpace::MinContent,
+        2 => TAvailableSpace::MaxContent,
+        _ => TAvailableSpace::Definite(v.value as f32),
     }
 }
 
@@ -308,13 +314,13 @@ fn to_taffy_style(s: &ffi::NodeStyle) -> Style {
         align_items: map_align_items(s.align_items),
         align_content: map_align_content(s.align_content),
         justify_content: map_align_content(s.justify_content),
-        overflow: Point {
+        overflow: TPoint {
             x: map_overflow(s.overflow_x),
             y: map_overflow(s.overflow_y),
         },
         box_sizing: map_box_sizing(s.box_sizing),
         direction: map_direction(s.direction),
-        size: Size {
+        size: TSize {
             width: map_dim(s.width),
             height: map_dim(s.height),
         },
@@ -369,7 +375,7 @@ impl TaffyEngine {
         let Some(&root) = self.nodes.first() else {
             return Ok(());
         };
-        let size = Size {
+        let size = TSize {
             width: map_available_space(width),
             height: map_available_space(height),
         };

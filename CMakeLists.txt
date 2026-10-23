@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 
 project(taffy
     VERSION 0.1.0
-    DESCRIPTION "Qt Quick item library; layout math in Rust (cxx + taffy)"
+    DESCRIPTION "Qt Quick item library; layout math in Rust (taffy), enums via cxx-qt qenum"
     LANGUAGES CXX
 )
 
@@ -23,7 +23,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 # --------------------------------------------------------------------
-# Qt 6 (C++ only — the Rust crate does not use Qt)
+# Qt 6
 # --------------------------------------------------------------------
 find_package(Qt6 REQUIRED COMPONENTS
     Core
@@ -41,36 +41,33 @@ if(MSVC)
 endif()
 
 # --------------------------------------------------------------------
-# Rust staticlib via Corrosion + cxx (no cxx-qt)
+# cxx-qt (enums / qenum) + Corrosion
 # --------------------------------------------------------------------
-include(FetchContent)
-FetchContent_Declare(Corrosion
-    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
-    GIT_TAG v0.5.2
-)
-FetchContent_MakeAvailable(Corrosion)
+find_package(CxxQt QUIET)
+if(NOT CxxQt_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(CxxQt
+        GIT_REPOSITORY https://github.com/kdab/cxx-qt-cmake.git
+        GIT_TAG 0.10.0
+    )
+    FetchContent_MakeAvailable(CxxQt)
+endif()
 
-corrosion_import_crate(
+# Public Qt modules only — private modules have no .prl (link them on C++ targets).
+cxx_qt_import_crate(
     MANIFEST_PATH rust/Cargo.toml
     CRATES taffy_rust
     LOCKED
+    QT_MODULES
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::QuickControls2
 )
 
-# cxx generated headers (lib.rs.h / lib.rs.cc glue already in the staticlib)
-# corrosion_add_cxxbridge creates an interface with the right include path.
-if(COMMAND corrosion_add_cxxbridge)
-    corrosion_add_cxxbridge(taffy_cxxbridge
-        CRATE taffy_rust
-        FILES lib.rs
-    )
-else()
-    # Fallback: locate OUT_DIR headers after first build via CARGO_TARGET_DIR
-    set_target_properties(taffy_rust PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-        "${CMAKE_CURRENT_BINARY_DIR}/corrosion")
-endif()
-
 # --------------------------------------------------------------------
-# C++ library — owns all Qt API
+# C++ library
 # --------------------------------------------------------------------
 add_library(taffy
     cpp/Taffy.cpp
@@ -99,10 +96,6 @@ target_link_libraries(taffy
         Qt6::QuickPrivate
         taffy_rust
 )
-
-if(TARGET taffy_cxxbridge)
-    target_link_libraries(taffy PRIVATE taffy_cxxbridge)
-endif()
 
 if(TAFFY_IS_TOP_LEVEL)
     add_subdirectory(examples/minimal)
