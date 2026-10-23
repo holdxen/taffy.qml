@@ -23,6 +23,26 @@ std::string toStd(const QString& s)
     return s.toStdString();
 }
 
+// "1 / 4" -> start=1 end=4; "span 2" -> start=span 2 end=auto
+void setLinePlacement(taffy::LinePlacement& p, const QString& css)
+{
+    const QString s = css.trimmed();
+    if (s.isEmpty()) {
+        p.start = "auto";
+        p.end = "auto";
+        return;
+    }
+    const int slash = s.indexOf(QLatin1Char('/'));
+    if (slash < 0) {
+        p.start = s.toStdString();
+        p.end = "auto";
+        return;
+    }
+    p.start = s.left(slash).trimmed().toStdString();
+    const QString end = s.mid(slash + 1).trimmed();
+    p.end = end.isEmpty() ? std::string("auto") : end.toStdString();
+}
+
 // Accept "100" as well as "100px" for length-like values.
 std::string lengthCss(const QString& s)
 {
@@ -527,8 +547,8 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     s.inset.bottom = lengthCss(attached->insetBottom());
     s.inset.left = lengthCss(attached->insetLeft());
 
-    s.gridRow.start = toStd(attached->gridRow());
-    s.gridColumn.start = toStd(attached->gridColumn());
+    setLinePlacement(s.gridRow, attached->gridRow());
+    setLinePlacement(s.gridColumn, attached->gridColumn());
     s.boxSizing = toStd(attached->boxSizing());
     s.overflowX = toStd(attached->overflowX());
     s.overflowY = toStd(attached->overflowY());
