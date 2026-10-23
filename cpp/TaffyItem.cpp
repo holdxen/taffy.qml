@@ -81,30 +81,23 @@ void TaffyItem::relayout()
 {
     m_engine.clear();
 
-    const quint32 root = m_engine.addNode();
-    m_engine.setStyle(root,
-                      m_display,
-                      m_flexDirection,
-                      FlexWrap::NoWrap,
-                      AlignItems::Stretch,
-                      AlignContent::Normal,
-                      AlignContent::Normal,
-                      width(), height());
+    taffy::Style rootStyle;
+    rootStyle.display = static_cast<qint32>(m_display);
+    rootStyle.flexDirection = static_cast<qint32>(m_flexDirection);
+    rootStyle.alignItems = static_cast<qint32>(AlignItems::Stretch);
+    rootStyle.size.width = taffy::LengthValue::length(width());
+    rootStyle.size.height = taffy::LengthValue::length(height());
+    const quint32 root = m_engine.addNode(rootStyle);
 
     const auto kids = childItems();
     for (int i = 0; i < kids.size(); ++i) {
-        const quint32 child = m_engine.addNode();
+        taffy::Style childStyle;
+        childStyle.display = static_cast<qint32>(Display::Flex);
         const qreal w = kids[i]->width();
         const qreal h = kids[i]->height();
-        m_engine.setStyle(child,
-                          Display::Flex,
-                          FlexDirection::Row,
-                          FlexWrap::NoWrap,
-                          AlignItems::Normal,
-                          AlignContent::Normal,
-                          AlignContent::Normal,
-                          w > 0 ? w : 100.0,
-                          h > 0 ? h : 40.0);
+        childStyle.size.width = taffy::LengthValue::length(w > 0 ? w : 100.0);
+        childStyle.size.height = taffy::LengthValue::length(h > 0 ? h : 40.0);
+        const quint32 child = m_engine.addNode(childStyle);
         m_engine.addChild(root, child);
     }
 

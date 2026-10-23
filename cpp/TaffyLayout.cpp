@@ -150,15 +150,20 @@ QSizeF TaffyLayout::sizeHint(Qt::SizeHint whichSizeHint) const
 QSizeF TaffyLayout::computeSizeHint(Qt::SizeHint which) const
 {
     m_engine.clear();
-    const quint32 root = m_engine.addNode();
-    m_engine.setStyle(root, m_display, m_flexDirection, m_flexWrap,
-                      m_alignItems, m_alignContent, m_alignContent,
-                      qQNaN(), qQNaN());
+    taffy::Style rootStyle;
+    rootStyle.display = static_cast<qint32>(m_display);
+    rootStyle.flexDirection = static_cast<qint32>(m_flexDirection);
+    rootStyle.flexWrap = static_cast<qint32>(m_flexWrap);
+    rootStyle.alignItems = static_cast<qint32>(m_alignItems);
+    rootStyle.alignContent = static_cast<qint32>(m_alignContent);
+    rootStyle.justifyContent = static_cast<qint32>(m_alignContent);
+    const quint32 root = m_engine.addNode(rootStyle);
 
     const int n = itemCount();
     for (int i = 0; i < n; ++i) {
         QQuickItem* child = itemAt(i);
-        const quint32 node = m_engine.addNode();
+        taffy::Style childStyle;
+        childStyle.display = static_cast<qint32>(Display::Flex);
         qreal w = child->width();
         qreal h = child->height();
         if (w <= 0) {
@@ -167,9 +172,9 @@ QSizeF TaffyLayout::computeSizeHint(Qt::SizeHint which) const
         if (h <= 0) {
             h = child->implicitHeight() > 0 ? child->implicitHeight() : 40;
         }
-        m_engine.setStyle(node, Display::Flex, FlexDirection::Row, FlexWrap::NoWrap,
-                          AlignItems::Normal, AlignContent::Normal,
-                          AlignContent::Normal, w, h);
+        childStyle.size.width = taffy::LengthValue::length(w);
+        childStyle.size.height = taffy::LengthValue::length(h);
+        const quint32 node = m_engine.addNode(childStyle);
         m_engine.addChild(root, node);
     }
 
@@ -203,17 +208,24 @@ void TaffyLayout::rearrange(const QSizeF& size)
 void TaffyLayout::relayout(const QSizeF& size)
 {
     m_engine.clear();
-    const quint32 root = m_engine.addNode();
-    m_engine.setStyle(root, m_display, m_flexDirection, m_flexWrap,
-                      m_alignItems, m_alignContent, m_alignContent,
-                      size.width(), size.height());
+    taffy::Style rootStyle;
+    rootStyle.display = static_cast<qint32>(m_display);
+    rootStyle.flexDirection = static_cast<qint32>(m_flexDirection);
+    rootStyle.flexWrap = static_cast<qint32>(m_flexWrap);
+    rootStyle.alignItems = static_cast<qint32>(m_alignItems);
+    rootStyle.alignContent = static_cast<qint32>(m_alignContent);
+    rootStyle.justifyContent = static_cast<qint32>(m_alignContent);
+    rootStyle.size.width = taffy::LengthValue::length(size.width());
+    rootStyle.size.height = taffy::LengthValue::length(size.height());
+    const quint32 root = m_engine.addNode(rootStyle);
 
     QList<QQuickItem*> layoutItems;
     const int n = itemCount();
     for (int i = 0; i < n; ++i) {
         QQuickItem* child = itemAt(i);
         layoutItems.append(child);
-        const quint32 node = m_engine.addNode();
+        taffy::Style childStyle;
+        childStyle.display = static_cast<qint32>(Display::Flex);
         qreal w = child->width();
         qreal h = child->height();
         if (w <= 0) {
@@ -222,9 +234,9 @@ void TaffyLayout::relayout(const QSizeF& size)
         if (h <= 0) {
             h = child->implicitHeight() > 0 ? child->implicitHeight() : 40;
         }
-        m_engine.setStyle(node, Display::Flex, FlexDirection::Row, FlexWrap::NoWrap,
-                          AlignItems::Normal, AlignContent::Normal,
-                          AlignContent::Normal, w, h);
+        childStyle.size.width = taffy::LengthValue::length(w);
+        childStyle.size.height = taffy::LengthValue::length(h);
+        const quint32 node = m_engine.addNode(childStyle);
         m_engine.addChild(root, node);
     }
 
