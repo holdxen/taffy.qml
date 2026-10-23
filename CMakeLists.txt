@@ -106,4 +106,5 @@ endif()
 
 if(TAFFY_IS_TOP_LEVEL)
     add_subdirectory(examples/minimal)
+    add_subdirectory(examples/dump)
 endif()

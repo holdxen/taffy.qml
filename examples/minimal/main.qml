@@ -19,14 +19,15 @@ ApplicationWindow {
         Text {
             text: 'ok =================='
             color: 'black'
-            TaffyLayout.flexShrink: 0
         }
 
         Rectangle {
             color: 'red'
-            TaffyLayout.width: '200px'
-            TaffyLayout.height: '100px'
+            // TaffyLayout.width: '200x'
+            // TaffyLayout.height: 'auto'
             TaffyLayout.flexGrow: 1
+            TaffyLayout.flexShrink: 1
+            TaffyLayout.flexBasis: '0%'
         }
     }
 }
