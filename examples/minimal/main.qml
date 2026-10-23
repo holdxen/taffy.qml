@@ -17,14 +17,12 @@ ApplicationWindow {
         gapWidth: 8
 
         Text {
-            text: 'ok =================='
+            text: 'hello world'
             color: 'black'
         }
 
         Rectangle {
             color: 'red'
-            // TaffyLayout.width: '200x'
-            // TaffyLayout.height: 'auto'
             TaffyLayout.flexGrow: 1
             TaffyLayout.flexShrink: 1
             TaffyLayout.flexBasis: '0%'
