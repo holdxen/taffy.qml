@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use taffy::geometry::{Line, MinMax, Point as TPoint, Rect as TRect, Size as TSize};
+use taffy::geometry::{Line, Point as TPoint, Rect as TRect, Size as TSize};
 use taffy::prelude::{
     AlignContent, AlignItems, AvailableSpace as TAvailableSpace, BoxSizing, Dimension, Display,
     FlexDirection, FlexWrap, LengthPercentage, LengthPercentageAuto, NodeId, Position, Style,
@@ -10,11 +10,10 @@ use taffy::prelude::{
 use taffy::style::{Clear, Direction, Float, GridAutoFlow, Overflow, TextAlign};
 use taffy::style_helpers::{length, percent};
 use taffy::tree::TaffyError;
-use taffy::{
-    GridPlacement, GridTemplateArea, GridTemplateAreas, GridTemplateComponent,
-    MaxTrackSizingFunction, MinTrackSizingFunction, TrackSizingFunction,
-};
 use taffy::TaffyTree;
+use taffy::{
+    GridPlacement, GridTemplateComponent, TrackSizingFunction,
+};
 
 #[cxx::bridge]
 pub mod ffi {
@@ -237,61 +236,6 @@ fn parse_lpa(s: &str) -> LengthPercentageAuto {
     LengthPercentageAuto::auto()
 }
 
-fn parse_min_track(s: &str) -> MinTrackSizingFunction {
-    let s = s.trim();
-    match s {
-        "auto" | "" => MinTrackSizingFunction::auto(),
-        "min-content" => MinTrackSizingFunction::min_content(),
-        "max-content" => MinTrackSizingFunction::max_content(),
-        _ => {
-            if let Some(p) = s.strip_suffix('%') {
-                if let Ok(v) = p.trim().parse::<f32>() {
-                    return percent(v / 100.0);
-                }
-            }
-            if let Some(v) = s.strip_suffix("px") {
-                if let Ok(v) = v.trim().parse::<f32>() {
-                    return length(v);
-                }
-            }
-            if let Ok(v) = s.parse::<f32>() {
-                return length(v);
-            }
-            MinTrackSizingFunction::auto()
-        }
-    }
-}
-
-fn parse_max_track(s: &str) -> MaxTrackSizingFunction {
-    let s = s.trim();
-    match s {
-        "auto" | "" => MaxTrackSizingFunction::auto(),
-        "min-content" => MaxTrackSizingFunction::min_content(),
-        "max-content" => MaxTrackSizingFunction::max_content(),
-        _ => {
-            if let Some(v) = s.strip_suffix("fr") {
-                if let Ok(v) = v.trim().parse::<f32>() {
-                    return MaxTrackSizingFunction::fr(v);
-                }
-            }
-            if let Some(p) = s.strip_suffix('%') {
-                if let Ok(v) = p.trim().parse::<f32>() {
-                    return percent(v / 100.0);
-                }
-            }
-            if let Some(v) = s.strip_suffix("px") {
-                if let Ok(v) = v.trim().parse::<f32>() {
-                    return length(v);
-                }
-            }
-            if let Ok(v) = s.parse::<f32>() {
-                return length(v);
-            }
-            MaxTrackSizingFunction::auto()
-        }
-    }
-}
-
 fn parse_placement(s: &str) -> GridPlacement {
     let s = s.trim();
     if s == "auto" || s.is_empty() {
@@ -315,12 +259,6 @@ fn parse_line(start: &str, end: &str) -> Line<GridPlacement> {
     }
 }
 
-fn parse_track(min: &str, max: &str) -> TrackSizingFunction {
-    MinMax {
-        min: parse_min_track(min),
-        max: parse_max_track(max),
-    }
-}
 
 /// Parse a CSS track list into GridTemplateComponent items.
 fn parse_grid_template(css: &str) -> Vec<GridTemplateComponent<String>> {
@@ -425,7 +363,7 @@ fn parse_grid_areas(css: &str) -> Option<taffy::GridTemplateAreas<String>> {
     } else {
         // quoted row strings: "a a" "b c"
         let mut rows = Vec::new();
-        let mut cur = Vec::new();
+        let mut cur: Vec<String>;
         let mut in_quote = false;
         let mut buf = String::new();
         for ch in css.chars() {
