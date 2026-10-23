@@ -26,26 +26,31 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 # --------------------------------------------------------------------
-# Qt
+# Qt 6 only (Qt 5 is not supported)
 # --------------------------------------------------------------------
-find_package(Qt6 QUIET COMPONENTS Core Gui Qml Quick QuickControls2 QuickPrivate QuickLayouts QuickLayoutsPrivate)
-if(NOT Qt6_FOUND)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
-    set(TAFFY_QT_PACKAGE Qt5)
-else()
-    set(TAFFY_QT_PACKAGE Qt6)
-endif()
+find_package(Qt6 REQUIRED COMPONENTS
+    Core
+    Gui
+    Qml
+    Quick
+    QuickControls2
+    # Private modules are for the C++ target only.
+    # They must NOT go into cxx_qt_import_crate(QT_MODULES ...).
+    QuickPrivate
+    QuickLayouts
+    QuickLayoutsPrivate
+)
 
 if(MSVC)
     set_property(TARGET
-        ${TAFFY_QT_PACKAGE}::Core
-        ${TAFFY_QT_PACKAGE}::Gui
-        ${TAFFY_QT_PACKAGE}::Qml
-        ${TAFFY_QT_PACKAGE}::Quick
-        ${TAFFY_QT_PACKAGE}::QuickPrivate
-        ${TAFFY_QT_PACKAGE}::QuickLayouts
-        ${TAFFY_QT_PACKAGE}::QuickLayoutsPrivate
-        ${TAFFY_QT_PACKAGE}::QuickControls2
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::QuickControls2
+        Qt6::QuickPrivate
+        Qt6::QuickLayouts
+        Qt6::QuickLayoutsPrivate
         PROPERTY MAP_IMPORTED_CONFIG_DEBUG "RELEASE")
 endif()
 
@@ -66,19 +71,18 @@ endif()
 # --------------------------------------------------------------------
 # Rust crate (staticlib + generated C++/headers via cxx-qt)
 # --------------------------------------------------------------------
+# Public Qt modules only. Private modules (*Private) have no .prl and will
+# panic in qt-build-utils if listed here. Link them on the C++ target instead.
 cxx_qt_import_crate(
     MANIFEST_PATH rust/Cargo.toml
     CRATES taffy_rust
     LOCKED
     QT_MODULES
-        ${TAFFY_QT_PACKAGE}::Core
-        ${TAFFY_QT_PACKAGE}::Gui
-        ${TAFFY_QT_PACKAGE}::Qml
-        ${TAFFY_QT_PACKAGE}::Quick
-        ${TAFFY_QT_PACKAGE}::QuickPrivate
-        ${TAFFY_QT_PACKAGE}::QuickLayouts
-        ${TAFFY_QT_PACKAGE}::QuickLayoutsPrivate
-        ${TAFFY_QT_PACKAGE}::QuickControls2
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::QuickControls2
 )
 
 # --------------------------------------------------------------------
@@ -102,11 +106,14 @@ target_include_directories(taffy
 
 target_link_libraries(taffy
     PUBLIC
-        ${TAFFY_QT_PACKAGE}::Core
-        ${TAFFY_QT_PACKAGE}::Gui
-        ${TAFFY_QT_PACKAGE}::Qml
-        ${TAFFY_QT_PACKAGE}::Quick
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Quick
     PRIVATE
+        Qt6::QuickPrivate
+        Qt6::QuickLayouts
+        Qt6::QuickLayoutsPrivate
         taffy_rust
 )
 

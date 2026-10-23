@@ -30,7 +30,7 @@ taffy/
 
 ## 构建（本仓库）
 
-依赖：CMake ≥ 3.24、Qt 5.15/6、Rust 工具链（cargo）。
+依赖：CMake ≥ 3.24、Qt 6、Rust 工具链（cargo）。**不支持 Qt 5。**
 
 ```bash
 cmake -S . -B build
