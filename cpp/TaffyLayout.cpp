@@ -450,28 +450,51 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     watchItemStyle(child);
     auto* attached = qobject_cast<TaffyLayoutAttached*>(qmlAttachedPropertiesObject<TaffyLayout>(child, false));
 
-    qreal fallbackW = child->width() > 0 ? child->width() : (child->implicitWidth() > 0 ? child->implicitWidth() : 100);
-    qreal fallbackH = child->height() > 0 ? child->height() : (child->implicitHeight() > 0 ? child->implicitHeight() : 40);
+    // Same size-hint chain as QQuickFlexboxLayout:
+    // QQuickLayoutAttached (Layout.*) → implicitWidth/Height → width/height.
+    QSizeF hints[Qt::NSizeHints];
+    QQuickLayoutAttached* layoutInfo = nullptr;
+    QQuickLayout::effectiveSizeHints_helper(child, hints, &layoutInfo, true);
+    const QSizeF pref = hints[Qt::PreferredSize];
+
+    auto toLen = [](qreal v) -> std::string {
+        if (v <= 0)
+            return "auto";
+        return std::to_string(v) + "px";
+    };
 
     if (!attached) {
-        s.size.width = std::to_string(fallbackW) + "px";
-        s.size.height = std::to_string(fallbackH) + "px";
+        s.size.width = toLen(pref.width());
+        s.size.height = toLen(pref.height());
         return s;
     }
 
     const QString w = attached->width();
     const QString h = attached->height();
-    s.size.width = (w == QLatin1String("auto") || w.isEmpty())
-                       ? std::to_string(fallbackW) + "px"
-                       : lengthCss(w);
-    s.size.height = (h == QLatin1String("auto") || h.isEmpty())
-                        ? std::to_string(fallbackH) + "px"
-                        : lengthCss(h);
+    const bool wAuto = (w == QLatin1String("auto") || w.isEmpty());
+    const bool hAuto = (h == QLatin1String("auto") || h.isEmpty());
+    s.size.width = wAuto ? toLen(pref.width()) : lengthCss(w);
+    s.size.height = hAuto ? toLen(pref.height()) : lengthCss(h);
 
-    s.minSize.width = lengthCss(attached->minWidth());
-    s.minSize.height = lengthCss(attached->minHeight());
-    s.maxSize.width = lengthCss(attached->maxWidth());
-    s.maxSize.height = lengthCss(attached->maxHeight());
+    // If Layout.* provided min/max hints and user did not override, use them.
+    if (attached->minWidth() == QLatin1String("auto") || attached->minWidth().isEmpty())
+        s.minSize.width = toLen(hints[Qt::MinimumSize].width());
+    if (attached->minHeight() == QLatin1String("auto") || attached->minHeight().isEmpty())
+        s.minSize.height = toLen(hints[Qt::MinimumSize].height());
+    if (attached->maxWidth() == QLatin1String("auto") || attached->maxWidth().isEmpty())
+        s.maxSize.width = toLen(hints[Qt::MaximumSize].width());
+    if (attached->maxHeight() == QLatin1String("auto") || attached->maxHeight().isEmpty())
+        s.maxSize.height = toLen(hints[Qt::MaximumSize].height());
+
+    // Explicit TaffyLayout min/max override the Layout.* hints above.
+    if (!(attached->minWidth() == QLatin1String("auto") || attached->minWidth().isEmpty()))
+        s.minSize.width = lengthCss(attached->minWidth());
+    if (!(attached->minHeight() == QLatin1String("auto") || attached->minHeight().isEmpty()))
+        s.minSize.height = lengthCss(attached->minHeight());
+    if (!(attached->maxWidth() == QLatin1String("auto") || attached->maxWidth().isEmpty()))
+        s.maxSize.width = lengthCss(attached->maxWidth());
+    if (!(attached->maxHeight() == QLatin1String("auto") || attached->maxHeight().isEmpty()))
+        s.maxSize.height = lengthCss(attached->maxHeight());
     s.aspectRatio = attached->aspectRatio();
 
     s.flexBasis = lengthCss(attached->flexBasis());
