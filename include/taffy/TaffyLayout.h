@@ -26,8 +26,8 @@ class TaffyLayout : public QQuickLayout
     Q_PROPERTY(QString alignItems READ alignItems WRITE setAlignItems NOTIFY styleChanged)
     Q_PROPERTY(QString alignContent READ alignContent WRITE setAlignContent NOTIFY styleChanged)
     Q_PROPERTY(QString justifyContent READ justifyContent WRITE setJustifyContent NOTIFY styleChanged)
-    Q_PROPERTY(qreal gapWidth READ gapWidth WRITE setGapWidth NOTIFY styleChanged)
-    Q_PROPERTY(qreal gapHeight READ gapHeight WRITE setGapHeight NOTIFY styleChanged)
+    Q_PROPERTY(qreal gapWidth READ gapWidth WRITE setGapWidth RESET resetGapWidth NOTIFY styleChanged)
+    Q_PROPERTY(qreal gapHeight READ gapHeight WRITE setGapHeight RESET resetGapHeight NOTIFY styleChanged)
     Q_PROPERTY(QString gridAutoFlow READ gridAutoFlow WRITE setGridAutoFlow NOTIFY styleChanged)
     Q_PROPERTY(QString gridTemplateRows READ gridTemplateRows WRITE setGridTemplateRows NOTIFY styleChanged)
     Q_PROPERTY(QString gridTemplateColumns READ gridTemplateColumns WRITE setGridTemplateColumns NOTIFY styleChanged)
@@ -68,8 +68,10 @@ public:
     void setJustifyContent(const QString& v);
     qreal gapWidth() const;
     void setGapWidth(qreal v);
+    void resetGapWidth();
     qreal gapHeight() const;
     void setGapHeight(qreal v);
+    void resetGapHeight();
     QString gridAutoFlow() const;
     void setGridAutoFlow(const QString& v);
     QString gridTemplateRows() const;
@@ -106,6 +108,7 @@ public:
     void setDirection(const QString& v);
 
     void componentComplete() override;
+    void invalidate(QQuickItem* childItem = nullptr) override;
     QSizeF sizeHint(Qt::SizeHint whichSizeHint) const override;
     void setAlignment(QQuickItem* item, Qt::Alignment align) override;
     void setStretchFactor(QQuickItem* item, int stretchFactor, Qt::Orientation orient) override;
@@ -119,6 +122,7 @@ signals:
 
 protected:
     void itemChange(ItemChange change, const ItemChangeData& value) override;
+    void itemSiblingOrderChanged(QQuickItem* item) override;
 
 private:
     Q_DECLARE_PRIVATE(TaffyLayout)
@@ -127,6 +131,8 @@ private:
     taffy::Style itemStyle(QQuickItem* child) const;
     void watchItemStyle(QQuickItem* child) const;
     void onItemStyleChanged();
+    void checkAnchors(QQuickItem* item) const;
+    void applyChildGeometry(QQuickItem* child, const taffy::Layout& layout);
 
     QString m_display = QStringLiteral("flex");
     QString m_flexDirection = QStringLiteral("row");
@@ -155,4 +161,6 @@ private:
     qreal m_paddingLeft = 0.0;
     QString m_direction = QStringLiteral("ltr");
     mutable taffy::Engine m_engine;
+    mutable bool m_sizeHintsDirty = true;
+    mutable QSizeF m_cachedSizeHints[Qt::NSizeHints];
 };
