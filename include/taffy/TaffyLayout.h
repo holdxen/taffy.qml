@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QStringList>
-#include <QVariantMap>
 
 #include <QtQuickLayouts/private/qquicklayout_p.h>
 
@@ -130,7 +129,7 @@ public:
 signals:
     void styleChanged();
 
-protected:
+public:
     void itemChange(ItemChange change, const ItemChangeData& value) override;
     void itemSiblingOrderChanged(QQuickItem* item) override;
 
@@ -141,8 +140,8 @@ private:
     taffy::Style itemStyle(QQuickItem* child) const;
     void watchItemStyle(QQuickItem* child) const;
     void onItemStyleChanged();
-    void checkAnchors(QQuickItem* item) const;
-    void applyChildGeometry(QQuickItem* child, const taffy::Layout& layout);
+    static void checkItemAnchors(QQuickItem* item);
+    static void applyChildGeometry(QQuickItem* child, const taffy::Layout& layout);
 
     QString m_display = QStringLiteral("flex");
     QString m_flexDirection = QStringLiteral("row");
