@@ -32,6 +32,8 @@ find_package(Qt6 REQUIRED COMPONENTS
     Quick
     QuickControls2
     QuickPrivate
+    QuickLayouts
+    QuickLayoutsPrivate
 )
 
 if(MSVC)
@@ -73,9 +75,11 @@ add_library(taffy
     cpp/Taffy.cpp
     cpp/TaffyEngine.cpp
     cpp/TaffyItem.cpp
+    cpp/TaffyLayout.cpp
     include/taffy/Taffy.h
     include/taffy/TaffyEngine.h
     include/taffy/TaffyItem.h
+    include/taffy/TaffyLayout.h
     include/taffy/TaffyTypes.h
 )
 add_library(taffy::taffy ALIAS taffy)
@@ -94,6 +98,8 @@ target_link_libraries(taffy
         Qt6::Quick
     PRIVATE
         Qt6::QuickPrivate
+        Qt6::QuickLayouts
+        Qt6::QuickLayoutsPrivate
         taffy_rust
 )
 
