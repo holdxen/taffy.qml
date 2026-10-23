@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QStringList>
+#include <QVariantMap>
 
 #include <QtQuickLayouts/private/qquicklayout_p.h>
 
@@ -45,12 +46,18 @@ class TaffyLayout : public QQuickLayout
     Q_PROPERTY(qreal paddingBottom READ paddingBottom WRITE setPaddingBottom NOTIFY styleChanged)
     Q_PROPERTY(qreal paddingLeft READ paddingLeft WRITE setPaddingLeft NOTIFY styleChanged)
     Q_PROPERTY(QString direction READ direction WRITE setDirection NOTIFY styleChanged)
+    // Debug: TaffyLayout's own style properties, via QMetaObject reflection
+    Q_PROPERTY(QVariantMap taffyStyle READ taffyStyle NOTIFY styleChanged)
 
 public:
     explicit TaffyLayout(QQuickItem* parent = nullptr);
     ~TaffyLayout() override;
 
     static TaffyLayoutAttached* qmlAttachedProperties(QObject* object);
+    /** Reflect all own taffy Q_PROPERTY values. */
+    QVariantMap taffyStyle() const;
+    /** Human-readable dump of this layout's taffy properties. */
+    Q_INVOKABLE QString dump() const;
     /** Dump TaffyLayout attached properties of every child (debug). */
     Q_INVOKABLE QString dumpTree() const;
 

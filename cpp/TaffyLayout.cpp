@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include <QDebug>
+#include <QMetaProperty>
 #include <QTextStream>
 #include <QtQml/qqml.h>
 #include <QtQuick/private/qquickanchors_p.h>
@@ -743,6 +744,54 @@ void TaffyLayout::rearrange(const QSizeF& size)
             applyChildGeometry(layoutItems[i], l);
         }
     }
+}
+
+static int taffyPropertyOffset(const QMetaObject* mo)
+{
+    for (const QMetaObject* m = mo; m; m = m->superClass()) {
+        if (QLatin1String(m->className()) == QLatin1String("TaffyLayout"))
+            return m->propertyOffset();
+    }
+    return 0;
+}
+
+QVariantMap TaffyLayout::taffyStyle() const
+{
+    QVariantMap map;
+    const QMetaObject* mo = metaObject();
+    const int start = taffyPropertyOffset(mo);
+    for (int i = start; i < mo->propertyCount(); ++i) {
+        const QMetaProperty p = mo->property(i);
+        if (p.isConstant())
+            continue;
+        if (QLatin1String(p.name()) == QLatin1String("taffyStyle"))
+            continue;
+        map.insert(QLatin1String(p.name()), p.read(this));
+    }
+    return map;
+}
+
+QString TaffyLayout::dump() const
+{
+    QString s;
+    QTextStream out(&s);
+    out << "TaffyLayout(" << static_cast<const void*>(this) << ")\n";
+    out << "  parent = " << static_cast<const void*>(parentItem()) << "\n";
+    out << "  size   = " << width() << " x " << height() << "\n";
+
+    const QMetaObject* mo = metaObject();
+    const int start = taffyPropertyOffset(mo);
+    for (int i = start; i < mo->propertyCount(); ++i) {
+        const QMetaProperty p = mo->property(i);
+        if (p.isConstant())
+            continue;
+        if (QLatin1String(p.name()) == QLatin1String("taffyStyle"))
+            continue;
+        const QVariant v = p.read(this);
+        out << "  " << QString::fromLatin1(p.name()).leftJustified(22, ' ')
+            << " = " << v.toString() << "\n";
+    }
+    return s;
 }
 
 QString TaffyLayout::dumpTree() const
