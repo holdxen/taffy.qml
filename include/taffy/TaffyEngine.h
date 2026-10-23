@@ -8,7 +8,6 @@ namespace taffy {
 
 class EngineImpl;
 
-/** Geometry in abstract layout units (usually pixels). */
 struct Rect
 {
     double left = 0.0;
@@ -29,10 +28,17 @@ struct Point
     double y = 0.0;
 };
 
-/**
- * Available space on one axis (mirrors taffy::AvailableSpace).
- * Definite(value) or MinContent / MaxContent.
- */
+struct Layout
+{
+    quint32 order = 0;
+    Point location;
+    Size size;
+    Rect border;
+    Rect padding;
+    Rect margin;
+    Size scrollbarSize;
+};
+
 struct AvailableSpace
 {
     enum class Kind {
@@ -65,20 +71,9 @@ struct AvailableSpace
     }
 };
 
-/** Mirrors taffy::Layout (without feature-gated fields). */
-struct Layout
-{
-    quint32 order = 0;
-    Point location;
-    Size size;
-    Rect border;
-    Rect padding;
-    Rect margin;
-    Size scrollbarSize;
-};
-
 /**
- * C++ facade over the Rust taffy engine (cxx).
+ * C++ facade over the Rust taffy engine.
+ * Enum types come from cxx-qt generated Q_ENUMs (TaffyTypes).
  */
 class Engine
 {
@@ -89,19 +84,18 @@ public:
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
 
-    quint32 addNode(const TaffyTypes* styleDefaults = nullptr);
+    quint32 addNode();
     bool addChild(quint32 parent, quint32 child);
-    bool setStyle(quint32 node, TaffyTypes::Display display,
-                  TaffyTypes::FlexDirection flexDirection,
-                  TaffyTypes::FlexWrap flexWrap,
-                  TaffyTypes::AlignItemsKeyword alignItems,
-                  TaffyTypes::AlignContentKeyword alignContent,
-                  TaffyTypes::AlignContentKeyword justifyContent,
+    bool setStyle(quint32 node,
+                  Display display,
+                  FlexDirection flexDirection,
+                  FlexWrap flexWrap,
+                  AlignItemsKeyword alignItems,
+                  AlignContentKeyword alignContent,
+                  AlignContentKeyword justifyContent,
                   qreal width, qreal height,
                   qreal flexGrow = 0.0, qreal flexShrink = 1.0);
-    /** Layout with per-axis available space (definite / min-content / max-content). */
     bool compute(const AvailableSpace& width, const AvailableSpace& height);
-    /** Convenience: definite width/height. */
     bool compute(qreal availableWidth, qreal availableHeight);
     bool layout(quint32 node, Layout& out) const;
     void clear();

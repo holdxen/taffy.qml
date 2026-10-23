@@ -13,8 +13,8 @@
 class TaffyItem : public QQuickItem
 {
     Q_OBJECT
-    Q_PROPERTY(TaffyTypes::Display display READ display WRITE setDisplay NOTIFY displayChanged)
-    Q_PROPERTY(TaffyTypes::FlexDirection flexDirection READ flexDirection WRITE setFlexDirection NOTIFY flexDirectionChanged)
+    Q_PROPERTY(Display display READ display WRITE setDisplay NOTIFY displayChanged)
+    Q_PROPERTY(FlexDirection flexDirection READ flexDirection WRITE setFlexDirection NOTIFY flexDirectionChanged)
     Q_PROPERTY(qreal spacing READ spacing WRITE setSpacing NOTIFY spacingChanged)
     Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
 
@@ -22,11 +22,11 @@ public:
     explicit TaffyItem(QQuickItem* parent = nullptr);
     ~TaffyItem() override;
 
-    TaffyTypes::Display display() const;
-    void setDisplay(TaffyTypes::Display display);
+    Display display() const;
+    void setDisplay(Display display);
 
-    TaffyTypes::FlexDirection flexDirection() const;
-    void setFlexDirection(TaffyTypes::FlexDirection direction);
+    FlexDirection flexDirection() const;
+    void setFlexDirection(FlexDirection direction);
 
     qreal spacing() const;
     void setSpacing(qreal spacing);
@@ -48,8 +48,8 @@ private:
     void relayout();
 
     taffy::Engine m_engine;
-    TaffyTypes::Display m_display = TaffyTypes::DisplayFlex;
-    TaffyTypes::FlexDirection m_flexDirection = TaffyTypes::FlexDirectionRow;
+    Display m_display = Display::Flex;
+    FlexDirection m_flexDirection = FlexDirection::Row;
     qreal m_spacing = 4.0;
     QColor m_color{ 0x3b, 0x82, 0xf6 };
 };

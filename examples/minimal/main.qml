@@ -12,8 +12,8 @@ ApplicationWindow {
     TaffyItem {
         anchors.fill: parent
         anchors.margins: 24
-        display: TaffyTypes.DisplayFlex
-        flexDirection: TaffyTypes.FlexDirectionColumn
+        display: TaffyTypes.Flex
+        flexDirection: TaffyTypes.Column
         color: "#3b82f6"
 
         Rectangle {

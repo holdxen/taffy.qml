@@ -3,14 +3,15 @@ name = "taffy_rust"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "Pure-Rust layout engine (taffy) exported to C++ via cxx — no Qt dependency"
+description = "taffy layout engine (cxx) + style enums auto-registered to Qt (cxx-qt qenum)"
 
 [lib]
 crate-type = ["staticlib"]
 
 [dependencies]
 cxx = "1.0"
+cxx-qt = "0.10"
 taffy = "0.15.0"
 
 [build-dependencies]
-cxx-build = "1.0"
+cxx-qt-build = "0.10"
