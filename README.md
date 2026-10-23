@@ -1,6 +1,6 @@
 # taffy
 
-Qt Quick 组件库骨架：**主逻辑在 C++（Qt）**，布局计算在 **Rust（taffy + 纯 cxx）**。Rust 不依赖 Qt。
+Qt Quick 组件库骨架：**主逻辑在 C++（Qt）**，布局计算在 **Rust（taffy + 纯 cxx）**。
 
 ## 分层
 
@@ -38,7 +38,7 @@ cmake --build build
 
 ```cmake
 FetchContent_Declare(taffy
-    GIT_REPOSITORY <url>
+    GIT_REPOSITORY https://github.com/holdxen/taffy.qml.git
     GIT_TAG main)
 FetchContent_MakeAvailable(taffy)
 
@@ -49,12 +49,6 @@ target_link_libraries(app PRIVATE taffy::taffy Qt6::Quick)
 #include <taffy/Taffy.h>
 taffy::registerQmlTypes();
 ```
-
-## 关键约束
-
-- Rust 侧 **不要** 依赖 Qt / cxx-qt。
-- 枚举在 C++（`TaffyTypes`）与 cxx bridge（`rust/src/lib.rs`）中保持同序，便于 `static_cast`。
-- 私有 Qt 模块只链到 C++ target；不要放进任何 Rust 模块列表。
 
 ## 许可
 
