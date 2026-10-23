@@ -76,10 +76,12 @@ add_library(taffy
     cpp/TaffyEngine.cpp
     cpp/TaffyItem.cpp
     cpp/TaffyLayout.cpp
+    cpp/TaffyLayoutAttached.cpp
     include/taffy/Taffy.h
     include/taffy/TaffyEngine.h
     include/taffy/TaffyItem.h
     include/taffy/TaffyLayout.h
+    include/taffy/TaffyLayoutAttached.h
     include/taffy/TaffyTypes.h
 )
 add_library(taffy::taffy ALIAS taffy)
