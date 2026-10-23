@@ -113,12 +113,12 @@ void TaffyItem::relayout()
     }
 
     for (int i = 0; i < kids.size(); ++i) {
-        qreal x = 0, y = 0, w = 0, h = 0;
+        taffy::Layout childLayout;
         // child nodes were added at indices 1..n
-        if (m_engine.layout(quint32(i + 1), x, y, w, h)) {
-            kids[i]->setX(x);
-            kids[i]->setY(y);
-            kids[i]->setSize(QSizeF(w, h));
+        if (m_engine.layout(quint32(i + 1), childLayout)) {
+            kids[i]->setX(childLayout.location.x);
+            kids[i]->setY(childLayout.location.y);
+            kids[i]->setSize(QSizeF(childLayout.size.width, childLayout.size.height));
         }
     }
 
