@@ -18,8 +18,8 @@ class TaffyLayout : public QQuickLayout
     Q_PROPERTY(Display display READ display WRITE setDisplay NOTIFY displayChanged)
     Q_PROPERTY(FlexDirection flexDirection READ flexDirection WRITE setFlexDirection NOTIFY flexDirectionChanged)
     Q_PROPERTY(FlexWrap flexWrap READ flexWrap WRITE setFlexWrap NOTIFY flexWrapChanged)
-    Q_PROPERTY(AlignItemsKeyword alignItems READ alignItems WRITE setAlignItems NOTIFY alignItemsChanged)
-    Q_PROPERTY(AlignContentKeyword alignContent READ alignContent WRITE setAlignContent NOTIFY alignContentChanged)
+    Q_PROPERTY(AlignItems alignItems READ alignItems WRITE setAlignItems NOTIFY alignItemsChanged)
+    Q_PROPERTY(AlignContent alignContent READ alignContent WRITE setAlignContent NOTIFY alignContentChanged)
 
 public:
     explicit TaffyLayout(QQuickItem* parent = nullptr);
@@ -34,11 +34,11 @@ public:
     FlexWrap flexWrap() const;
     void setFlexWrap(FlexWrap wrap);
 
-    AlignItemsKeyword alignItems() const;
-    void setAlignItems(AlignItemsKeyword align);
+    AlignItems alignItems() const;
+    void setAlignItems(AlignItems align);
 
-    AlignContentKeyword alignContent() const;
-    void setAlignContent(AlignContentKeyword align);
+    AlignContent alignContent() const;
+    void setAlignContent(AlignContent align);
 
     // QQuickLayout
     QSizeF sizeHint(Qt::SizeHint whichSizeHint) const override;
@@ -70,8 +70,8 @@ private:
     Display m_display = Display::Flex;
     FlexDirection m_flexDirection = FlexDirection::Row;
     FlexWrap m_flexWrap = FlexWrap::NoWrap;
-    AlignItemsKeyword m_alignItems = AlignItemsKeyword::Normal;
-    AlignContentKeyword m_alignContent = AlignContentKeyword::Normal;
+    AlignItems m_alignItems = AlignItems::Normal;
+    AlignContent m_alignContent = AlignContent::Normal;
     mutable taffy::Engine m_engine;
     QSizeF m_cachedMin;
     QSizeF m_cachedPref;

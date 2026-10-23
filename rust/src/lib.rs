@@ -51,7 +51,7 @@ pub mod ffi {
     }
 
     #[qenum(TaffyTypes)]
-    enum AlignItemsKeyword {
+    enum AlignItems {
         Normal,
         Start,
         End,
@@ -65,7 +65,7 @@ pub mod ffi {
     }
 
     #[qenum(TaffyTypes)]
-    enum AlignContentKeyword {
+    enum AlignContent {
         Normal,
         Start,
         End,

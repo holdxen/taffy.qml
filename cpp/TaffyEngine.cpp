@@ -25,9 +25,9 @@ quint32 Engine::addNode()
     style.position = static_cast<int32_t>(Position::Static);
     style.flex_direction = static_cast<int32_t>(FlexDirection::Row);
     style.flex_wrap = static_cast<int32_t>(FlexWrap::NoWrap);
-    style.align_items = static_cast<int32_t>(AlignItemsKeyword::Normal);
-    style.align_content = static_cast<int32_t>(AlignContentKeyword::Normal);
-    style.justify_content = static_cast<int32_t>(AlignContentKeyword::Normal);
+    style.align_items = static_cast<int32_t>(AlignItems::Normal);
+    style.align_content = static_cast<int32_t>(AlignContent::Normal);
+    style.justify_content = static_cast<int32_t>(AlignContent::Normal);
     style.overflow_x = static_cast<int32_t>(Overflow::Visible);
     style.overflow_y = static_cast<int32_t>(Overflow::Visible);
     style.box_sizing = static_cast<int32_t>(BoxSizing::BorderBox);
@@ -53,9 +53,9 @@ bool Engine::setStyle(quint32 node,
                       Display display,
                       FlexDirection flexDirection,
                       FlexWrap flexWrap,
-                      AlignItemsKeyword alignItems,
-                      AlignContentKeyword alignContent,
-                      AlignContentKeyword justifyContent,
+                      AlignItems alignItems,
+                      AlignContent alignContent,
+                      AlignContent justifyContent,
                       qreal width, qreal height,
                       qreal flexGrow, qreal flexShrink)
 {

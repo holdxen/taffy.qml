@@ -58,12 +58,12 @@ void TaffyLayout::setFlexWrap(FlexWrap wrap)
     invalidate();
 }
 
-AlignItemsKeyword TaffyLayout::alignItems() const
+AlignItems TaffyLayout::alignItems() const
 {
     return m_alignItems;
 }
 
-void TaffyLayout::setAlignItems(AlignItemsKeyword align)
+void TaffyLayout::setAlignItems(AlignItems align)
 {
     if (m_alignItems == align) {
         return;
@@ -73,12 +73,12 @@ void TaffyLayout::setAlignItems(AlignItemsKeyword align)
     invalidate();
 }
 
-AlignContentKeyword TaffyLayout::alignContent() const
+AlignContent TaffyLayout::alignContent() const
 {
     return m_alignContent;
 }
 
-void TaffyLayout::setAlignContent(AlignContentKeyword align)
+void TaffyLayout::setAlignContent(AlignContent align)
 {
     if (m_alignContent == align) {
         return;
@@ -168,8 +168,8 @@ QSizeF TaffyLayout::computeSizeHint(Qt::SizeHint which) const
             h = child->implicitHeight() > 0 ? child->implicitHeight() : 40;
         }
         m_engine.setStyle(node, Display::Flex, FlexDirection::Row, FlexWrap::NoWrap,
-                          AlignItemsKeyword::Normal, AlignContentKeyword::Normal,
-                          AlignContentKeyword::Normal, w, h);
+                          AlignItems::Normal, AlignContent::Normal,
+                          AlignContent::Normal, w, h);
         m_engine.addChild(root, node);
     }
 
@@ -223,8 +223,8 @@ void TaffyLayout::relayout(const QSizeF& size)
             h = child->implicitHeight() > 0 ? child->implicitHeight() : 40;
         }
         m_engine.setStyle(node, Display::Flex, FlexDirection::Row, FlexWrap::NoWrap,
-                          AlignItemsKeyword::Normal, AlignContentKeyword::Normal,
-                          AlignContentKeyword::Normal, w, h);
+                          AlignItems::Normal, AlignContent::Normal,
+                          AlignContent::Normal, w, h);
         m_engine.addChild(root, node);
     }
 
