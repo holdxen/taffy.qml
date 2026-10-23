@@ -9,20 +9,21 @@ ApplicationWindow {
     visible: true
     title: qsTr("taffy minimal example")
 
-    TaffyItem {
+    TaffyLayout {
         anchors.fill: parent
         anchors.margins: 24
-        display: TaffyTypes.Flex
-        flexDirection: TaffyTypes.Column
-        color: "#3b82f6"
+        display: "flex"
+        flexDirection: "column"
+        gapHeight: 8
 
         Rectangle {
-            width: 200; height: 40
             color: "#22c55e"
+            TaffyLayout.height: "40px"
         }
         Rectangle {
-            width: 200; height: 40
             color: "#f59e0b"
+            TaffyLayout.height: "40px"
+            TaffyLayout.flexGrow: 1
         }
     }
 }

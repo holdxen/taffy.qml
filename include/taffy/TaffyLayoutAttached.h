@@ -1,42 +1,39 @@
 #pragma once
 
+#include <limits>
 
 #include <QObject>
-
-#include <taffy/TaffyTypes.h>
+#include <QString>
 
 /**
- * Item-side taffy::Style fields as attached properties of TaffyLayout.
- * QML uses the TaffyLayout name (not Layout):
+ * Item-side style as attached properties of TaffyLayout.
  *
  *   TaffyLayout {
  *       Rectangle {
- *           TaffyLayout.width: 100
+ *           TaffyLayout.width: "100px"
  *           TaffyLayout.flexGrow: 1
  *       }
  *   }
+ *
+ * CSS-like strings: "auto", "100px", "50%", "min-content"
  */
 class TaffyLayoutAttached : public QObject
 {
     Q_OBJECT
-    // size / constraints (NaN = auto)
-    Q_PROPERTY(qreal width READ width WRITE setWidth NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal height READ height WRITE setHeight NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal minWidth READ minWidth WRITE setMinWidth NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal minHeight READ minHeight WRITE setMinHeight NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal maxWidth READ maxWidth WRITE setMaxWidth NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal maxHeight READ maxHeight WRITE setMaxHeight NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString width READ width WRITE setWidth NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString height READ height WRITE setHeight NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString minWidth READ minWidth WRITE setMinWidth NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString minHeight READ minHeight WRITE setMinHeight NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString maxWidth READ maxWidth WRITE setMaxWidth NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString maxHeight READ maxHeight WRITE setMaxHeight NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal aspectRatio READ aspectRatio WRITE setAspectRatio NOTIFY itemStyleChanged)
-    // flex item
-    Q_PROPERTY(qreal flexBasis READ flexBasis WRITE setFlexBasis NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString flexBasis READ flexBasis WRITE setFlexBasis NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal flexGrow READ flexGrow WRITE setFlexGrow NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal flexShrink READ flexShrink WRITE setFlexShrink NOTIFY itemStyleChanged)
-    // alignment override
     Q_PROPERTY(bool hasAlignSelf READ hasAlignSelf WRITE setHasAlignSelf NOTIFY itemStyleChanged)
-    Q_PROPERTY(AlignItems alignSelf READ alignSelf WRITE setAlignSelf NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString alignSelf READ alignSelf WRITE setAlignSelf NOTIFY itemStyleChanged)
     Q_PROPERTY(bool hasJustifySelf READ hasJustifySelf WRITE setHasJustifySelf NOTIFY itemStyleChanged)
-    Q_PROPERTY(AlignItems justifySelf READ justifySelf WRITE setJustifySelf NOTIFY itemStyleChanged)
-    // box
+    Q_PROPERTY(QString justifySelf READ justifySelf WRITE setJustifySelf NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal marginTop READ marginTop WRITE setMarginTop NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal marginRight READ marginRight WRITE setMarginRight NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal marginBottom READ marginBottom WRITE setMarginBottom NOTIFY itemStyleChanged)
@@ -49,33 +46,32 @@ class TaffyLayoutAttached : public QObject
     Q_PROPERTY(qreal borderRight READ borderRight WRITE setBorderRight NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal borderBottom READ borderBottom WRITE setBorderBottom NOTIFY itemStyleChanged)
     Q_PROPERTY(qreal borderLeft READ borderLeft WRITE setBorderLeft NOTIFY itemStyleChanged)
-    // position
-    Q_PROPERTY(Position position READ position WRITE setPosition NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal insetTop READ insetTop WRITE setInsetTop NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal insetRight READ insetRight WRITE setInsetRight NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal insetBottom READ insetBottom WRITE setInsetBottom NOTIFY itemStyleChanged)
-    Q_PROPERTY(qreal insetLeft READ insetLeft WRITE setInsetLeft NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString position READ position WRITE setPosition NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString insetTop READ insetTop WRITE setInsetTop NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString insetRight READ insetRight WRITE setInsetRight NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString insetBottom READ insetBottom WRITE setInsetBottom NOTIFY itemStyleChanged)
+    Q_PROPERTY(QString insetLeft READ insetLeft WRITE setInsetLeft NOTIFY itemStyleChanged)
 
 public:
     explicit TaffyLayoutAttached(QObject* parent = nullptr);
 
-    qreal width() const;
-    void setWidth(qreal v);
-    qreal height() const;
-    void setHeight(qreal v);
-    qreal minWidth() const;
-    void setMinWidth(qreal v);
-    qreal minHeight() const;
-    void setMinHeight(qreal v);
-    qreal maxWidth() const;
-    void setMaxWidth(qreal v);
-    qreal maxHeight() const;
-    void setMaxHeight(qreal v);
+    QString width() const;
+    void setWidth(const QString& v);
+    QString height() const;
+    void setHeight(const QString& v);
+    QString minWidth() const;
+    void setMinWidth(const QString& v);
+    QString minHeight() const;
+    void setMinHeight(const QString& v);
+    QString maxWidth() const;
+    void setMaxWidth(const QString& v);
+    QString maxHeight() const;
+    void setMaxHeight(const QString& v);
     qreal aspectRatio() const;
     void setAspectRatio(qreal v);
 
-    qreal flexBasis() const;
-    void setFlexBasis(qreal v);
+    QString flexBasis() const;
+    void setFlexBasis(const QString& v);
     qreal flexGrow() const;
     void setFlexGrow(qreal v);
     qreal flexShrink() const;
@@ -83,12 +79,12 @@ public:
 
     bool hasAlignSelf() const;
     void setHasAlignSelf(bool v);
-    AlignItems alignSelf() const;
-    void setAlignSelf(AlignItems v);
+    QString alignSelf() const;
+    void setAlignSelf(const QString& v);
     bool hasJustifySelf() const;
     void setHasJustifySelf(bool v);
-    AlignItems justifySelf() const;
-    void setJustifySelf(AlignItems v);
+    QString justifySelf() const;
+    void setJustifySelf(const QString& v);
 
     qreal marginTop() const;
     void setMarginTop(qreal v);
@@ -117,35 +113,35 @@ public:
     qreal borderLeft() const;
     void setBorderLeft(qreal v);
 
-    Position position() const;
-    void setPosition(Position v);
-    qreal insetTop() const;
-    void setInsetTop(qreal v);
-    qreal insetRight() const;
-    void setInsetRight(qreal v);
-    qreal insetBottom() const;
-    void setInsetBottom(qreal v);
-    qreal insetLeft() const;
-    void setInsetLeft(qreal v);
+    QString position() const;
+    void setPosition(const QString& v);
+    QString insetTop() const;
+    void setInsetTop(const QString& v);
+    QString insetRight() const;
+    void setInsetRight(const QString& v);
+    QString insetBottom() const;
+    void setInsetBottom(const QString& v);
+    QString insetLeft() const;
+    void setInsetLeft(const QString& v);
 
 signals:
     void itemStyleChanged();
 
 private:
-    qreal m_width = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_height = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_minWidth = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_minHeight = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_maxWidth = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_maxHeight = std::numeric_limits<qreal>::quiet_NaN();
+    QString m_width = QStringLiteral("auto");
+    QString m_height = QStringLiteral("auto");
+    QString m_minWidth = QStringLiteral("auto");
+    QString m_minHeight = QStringLiteral("auto");
+    QString m_maxWidth = QStringLiteral("auto");
+    QString m_maxHeight = QStringLiteral("auto");
     qreal m_aspectRatio = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_flexBasis = std::numeric_limits<qreal>::quiet_NaN();
+    QString m_flexBasis = QStringLiteral("auto");
     qreal m_flexGrow = 0.0;
     qreal m_flexShrink = 1.0;
     bool m_hasAlignSelf = false;
-    AlignItems m_alignSelf = AlignItems::Normal;
+    QString m_alignSelf = QStringLiteral("normal");
     bool m_hasJustifySelf = false;
-    AlignItems m_justifySelf = AlignItems::Normal;
+    QString m_justifySelf = QStringLiteral("normal");
     qreal m_marginTop = 0.0;
     qreal m_marginRight = 0.0;
     qreal m_marginBottom = 0.0;
@@ -158,10 +154,9 @@ private:
     qreal m_borderRight = 0.0;
     qreal m_borderBottom = 0.0;
     qreal m_borderLeft = 0.0;
-    Position m_position = Position::Static;
-    qreal m_insetTop = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_insetRight = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_insetBottom = std::numeric_limits<qreal>::quiet_NaN();
-    qreal m_insetLeft = std::numeric_limits<qreal>::quiet_NaN();
+    QString m_position = QStringLiteral("static");
+    QString m_insetTop = QStringLiteral("auto");
+    QString m_insetRight = QStringLiteral("auto");
+    QString m_insetBottom = QStringLiteral("auto");
+    QString m_insetLeft = QStringLiteral("auto");
 };
-

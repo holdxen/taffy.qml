@@ -1,51 +1,29 @@
 #include "taffy/TaffyEngine.h"
 
 #include <cstdint>
-#include <limits>
+
+// cxx-generated glue (global namespace types)
+#include <taffy_cxxbridge/lib.h>
 
 namespace taffy {
 
 namespace {
 
-::LengthValue toFfi(const LengthValue& v)
+::LengthRect toFfi(const LengthRect& r)
 {
-    ::LengthValue o;
-    o.kind = v.kind;
-    o.value = v.value;
+    ::LengthRect o;
+    o.left = r.left;
+    o.right = r.right;
+    o.top = r.top;
+    o.bottom = r.bottom;
     return o;
 }
 
 ::LengthSize toFfi(const LengthSize& s)
 {
     ::LengthSize o;
-    o.width = toFfi(s.width);
-    o.height = toFfi(s.height);
-    return o;
-}
-
-::LengthRect toFfi(const LengthRect& r)
-{
-    ::LengthRect o;
-    o.left = toFfi(r.left);
-    o.right = toFfi(r.right);
-    o.top = toFfi(r.top);
-    o.bottom = toFfi(r.bottom);
-    return o;
-}
-
-::Placement toFfi(const Placement& p)
-{
-    ::Placement o;
-    o.kind = p.kind;
-    o.value = p.value;
-    return o;
-}
-
-::LinePlacement toFfi(const LinePlacement& p)
-{
-    ::LinePlacement o;
-    o.start = toFfi(p.start);
-    o.end = toFfi(p.end);
+    o.width = s.width;
+    o.height = s.height;
     return o;
 }
 
@@ -86,12 +64,42 @@ namespace {
     o.flex_direction = s.flexDirection;
     o.flex_wrap = s.flexWrap;
     o.flex_line_count = s.flexLineCount;
-    o.flex_basis = toFfi(s.flexBasis);
+    o.flex_basis = s.flexBasis;
     o.flex_grow = s.flexGrow;
     o.flex_shrink = s.flexShrink;
     o.grid_auto_flow = s.gridAutoFlow;
-    o.grid_row = toFfi(s.gridRow);
-    o.grid_column = toFfi(s.gridColumn);
+    o.grid_template_rows = {};
+    for (const auto& t : s.gridTemplateRows) {
+        ::TrackSize ts;
+        ts.min = t.min;
+        ts.max = t.max;
+        o.grid_template_rows.push_back(ts);
+    }
+    o.grid_template_columns = {};
+    for (const auto& t : s.gridTemplateColumns) {
+        ::TrackSize ts;
+        ts.min = t.min;
+        ts.max = t.max;
+        o.grid_template_columns.push_back(ts);
+    }
+    o.grid_auto_rows = {};
+    for (const auto& t : s.gridAutoRows) {
+        ::TrackSize ts;
+        ts.min = t.min;
+        ts.max = t.max;
+        o.grid_auto_rows.push_back(ts);
+    }
+    o.grid_auto_columns = {};
+    for (const auto& t : s.gridAutoColumns) {
+        ::TrackSize ts;
+        ts.min = t.min;
+        ts.max = t.max;
+        o.grid_auto_columns.push_back(ts);
+    }
+    o.grid_row.start = s.gridRow.start;
+    o.grid_row.end = s.gridRow.end;
+    o.grid_column.start = s.gridColumn.start;
+    o.grid_column.end = s.gridColumn.end;
     return o;
 }
 
@@ -110,17 +118,17 @@ Engine::Engine()
 
 Engine::~Engine() = default;
 
-quint32 Engine::addNode()
+unsigned Engine::addNode()
 {
     return addNode(Style{});
 }
 
-quint32 Engine::addNode(const Style& style)
+unsigned Engine::addNode(const Style& style)
 {
     return d->engine->engine_add_node(toFfi(style));
 }
 
-bool Engine::addChild(quint32 parent, quint32 child)
+bool Engine::addChild(unsigned parent, unsigned child)
 {
     try {
         d->engine->engine_add_child(parent, child);
@@ -130,7 +138,7 @@ bool Engine::addChild(quint32 parent, quint32 child)
     }
 }
 
-bool Engine::setStyle(quint32 node, const Style& style)
+bool Engine::setStyle(unsigned node, const Style& style)
 {
     try {
         d->engine->engine_set_style(node, toFfi(style));
@@ -156,13 +164,13 @@ bool Engine::compute(const AvailableSpace& width, const AvailableSpace& height)
     }
 }
 
-bool Engine::compute(qreal availableWidth, qreal availableHeight)
+bool Engine::compute(double availableWidth, double availableHeight)
 {
     return compute(AvailableSpace::definite(availableWidth),
                    AvailableSpace::definite(availableHeight));
 }
 
-bool Engine::layout(quint32 node, Layout& out) const
+bool Engine::layout(unsigned node, Layout& out) const
 {
     try {
         const ::Layout l = d->engine->engine_layout(node);

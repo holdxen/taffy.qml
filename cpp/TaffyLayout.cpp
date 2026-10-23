@@ -1,5 +1,6 @@
 #include "taffy/TaffyLayout.h"
 
+#include <algorithm>
 #include <cmath>
 
 class TaffyLayoutPrivate : public QQuickLayoutPrivate
@@ -7,6 +8,15 @@ class TaffyLayoutPrivate : public QQuickLayoutPrivate
 public:
     TaffyLayoutPrivate() = default;
 };
+
+namespace {
+
+std::string toStd(const QString& s)
+{
+    return s.toStdString();
+}
+
+} // namespace
 
 TaffyLayout::TaffyLayout(QQuickItem* parent)
     : QQuickLayout(*new TaffyLayoutPrivate, parent)
@@ -20,13 +30,11 @@ TaffyLayoutAttached* TaffyLayout::qmlAttachedProperties(QObject* object)
     return new TaffyLayoutAttached(object);
 }
 
-// --- container-side properties ---
-
-Display TaffyLayout::display() const
+QString TaffyLayout::display() const
 {
     return m_display;
 }
-void TaffyLayout::setDisplay(Display v)
+void TaffyLayout::setDisplay(const QString& v)
 {
     if (m_display == v)
         return;
@@ -34,11 +42,11 @@ void TaffyLayout::setDisplay(Display v)
     emit styleChanged();
     invalidate();
 }
-FlexDirection TaffyLayout::flexDirection() const
+QString TaffyLayout::flexDirection() const
 {
     return m_flexDirection;
 }
-void TaffyLayout::setFlexDirection(FlexDirection v)
+void TaffyLayout::setFlexDirection(const QString& v)
 {
     if (m_flexDirection == v)
         return;
@@ -46,11 +54,11 @@ void TaffyLayout::setFlexDirection(FlexDirection v)
     emit styleChanged();
     invalidate();
 }
-FlexWrap TaffyLayout::flexWrap() const
+QString TaffyLayout::flexWrap() const
 {
     return m_flexWrap;
 }
-void TaffyLayout::setFlexWrap(FlexWrap v)
+void TaffyLayout::setFlexWrap(const QString& v)
 {
     if (m_flexWrap == v)
         return;
@@ -58,11 +66,11 @@ void TaffyLayout::setFlexWrap(FlexWrap v)
     emit styleChanged();
     invalidate();
 }
-qint32 TaffyLayout::flexLineCount() const
+int TaffyLayout::flexLineCount() const
 {
     return m_flexLineCount;
 }
-void TaffyLayout::setFlexLineCount(qint32 v)
+void TaffyLayout::setFlexLineCount(int v)
 {
     if (m_flexLineCount == v)
         return;
@@ -70,11 +78,11 @@ void TaffyLayout::setFlexLineCount(qint32 v)
     emit styleChanged();
     invalidate();
 }
-AlignItems TaffyLayout::alignItems() const
+QString TaffyLayout::alignItems() const
 {
     return m_alignItems;
 }
-void TaffyLayout::setAlignItems(AlignItems v)
+void TaffyLayout::setAlignItems(const QString& v)
 {
     if (m_alignItems == v)
         return;
@@ -82,11 +90,11 @@ void TaffyLayout::setAlignItems(AlignItems v)
     emit styleChanged();
     invalidate();
 }
-AlignContent TaffyLayout::alignContent() const
+QString TaffyLayout::alignContent() const
 {
     return m_alignContent;
 }
-void TaffyLayout::setAlignContent(AlignContent v)
+void TaffyLayout::setAlignContent(const QString& v)
 {
     if (m_alignContent == v)
         return;
@@ -94,11 +102,11 @@ void TaffyLayout::setAlignContent(AlignContent v)
     emit styleChanged();
     invalidate();
 }
-AlignContent TaffyLayout::justifyContent() const
+QString TaffyLayout::justifyContent() const
 {
     return m_justifyContent;
 }
-void TaffyLayout::setJustifyContent(AlignContent v)
+void TaffyLayout::setJustifyContent(const QString& v)
 {
     if (m_justifyContent == v)
         return;
@@ -130,11 +138,11 @@ void TaffyLayout::setGapHeight(qreal v)
     emit styleChanged();
     invalidate();
 }
-GridAutoFlow TaffyLayout::gridAutoFlow() const
+QString TaffyLayout::gridAutoFlow() const
 {
     return m_gridAutoFlow;
 }
-void TaffyLayout::setGridAutoFlow(GridAutoFlow v)
+void TaffyLayout::setGridAutoFlow(const QString& v)
 {
     if (m_gridAutoFlow == v)
         return;
@@ -190,11 +198,11 @@ void TaffyLayout::setPaddingLeft(qreal v)
     emit styleChanged();
     invalidate();
 }
-StyleDirection TaffyLayout::direction() const
+QString TaffyLayout::direction() const
 {
     return m_direction;
 }
-void TaffyLayout::setDirection(StyleDirection v)
+void TaffyLayout::setDirection(const QString& v)
 {
     if (m_direction == v)
         return;
@@ -203,43 +211,27 @@ void TaffyLayout::setDirection(StyleDirection v)
     invalidate();
 }
 
-// --- style builders ---
-
-namespace {
-
-taffy::LengthValue lenOrAuto(qreal v)
-{
-    return (v != v) ? taffy::LengthValue::autoValue() : taffy::LengthValue::length(v);
-}
-
-taffy::LengthValue lenOrZero(qreal v)
-{
-    return (v != v) ? taffy::LengthValue::zero() : taffy::LengthValue::length(v);
-}
-
-} // namespace
-
 taffy::Style TaffyLayout::containerStyle(const QSizeF& size) const
 {
     taffy::Style s;
-    s.display = static_cast<qint32>(m_display);
-    s.flexDirection = static_cast<qint32>(m_flexDirection);
-    s.flexWrap = static_cast<qint32>(m_flexWrap);
-    s.flexLineCount = quint32(std::max(1, m_flexLineCount));
-    s.alignItems = static_cast<qint32>(m_alignItems);
-    s.alignContent = static_cast<qint32>(m_alignContent);
-    s.justifyContent = static_cast<qint32>(m_justifyContent);
-    s.gap.width = taffy::LengthValue::length(m_gapWidth);
-    s.gap.height = taffy::LengthValue::length(m_gapHeight);
-    s.gridAutoFlow = static_cast<qint32>(m_gridAutoFlow);
-    s.direction = static_cast<qint32>(m_direction);
-    s.padding.top = taffy::LengthValue::length(m_paddingTop);
-    s.padding.right = taffy::LengthValue::length(m_paddingRight);
-    s.padding.bottom = taffy::LengthValue::length(m_paddingBottom);
-    s.padding.left = taffy::LengthValue::length(m_paddingLeft);
+    s.display = toStd(m_display);
+    s.flexDirection = toStd(m_flexDirection);
+    s.flexWrap = toStd(m_flexWrap);
+    s.flexLineCount = unsigned(std::max(1, m_flexLineCount));
+    s.alignItems = toStd(m_alignItems);
+    s.alignContent = toStd(m_alignContent);
+    s.justifyContent = toStd(m_justifyContent);
+    s.gap.width = std::to_string(m_gapWidth) + "px";
+    s.gap.height = std::to_string(m_gapHeight) + "px";
+    s.gridAutoFlow = toStd(m_gridAutoFlow);
+    s.direction = toStd(m_direction);
+    s.padding.top = std::to_string(m_paddingTop) + "px";
+    s.padding.right = std::to_string(m_paddingRight) + "px";
+    s.padding.bottom = std::to_string(m_paddingBottom) + "px";
+    s.padding.left = std::to_string(m_paddingLeft) + "px";
     if (size.width() > 0 && size.height() > 0) {
-        s.size.width = taffy::LengthValue::length(size.width());
-        s.size.height = taffy::LengthValue::length(size.height());
+        s.size.width = std::to_string(size.width()) + "px";
+        s.size.height = std::to_string(size.height()) + "px";
     }
     return s;
 }
@@ -247,74 +239,66 @@ taffy::Style TaffyLayout::containerStyle(const QSizeF& size) const
 taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
 {
     taffy::Style s;
-    s.display = static_cast<qint32>(Display::Flex);
+    s.display = "flex";
 
     auto* attached = qobject_cast<TaffyLayoutAttached*>(qmlAttachedPropertiesObject<TaffyLayout>(child, false));
+
+    qreal fallbackW = child->width() > 0 ? child->width() : (child->implicitWidth() > 0 ? child->implicitWidth() : 100);
+    qreal fallbackH = child->height() > 0 ? child->height() : (child->implicitHeight() > 0 ? child->implicitHeight() : 40);
+
     if (!attached) {
-        // fall back to item geometry
-        qreal w = child->width() > 0 ? child->width() : (child->implicitWidth() > 0 ? child->implicitWidth() : 100);
-        qreal h = child->height() > 0 ? child->height() : (child->implicitHeight() > 0 ? child->implicitHeight() : 40);
-        s.size.width = taffy::LengthValue::length(w);
-        s.size.height = taffy::LengthValue::length(h);
+        s.size.width = std::to_string(fallbackW) + "px";
+        s.size.height = std::to_string(fallbackH) + "px";
         return s;
     }
 
-    qreal w = attached->width();
-    qreal h = attached->height();
-    if (w != w) {
-        w = child->width() > 0 ? child->width() : (child->implicitWidth() > 0 ? child->implicitWidth() : 100);
-        s.size.width = taffy::LengthValue::length(w);
-    } else {
-        s.size.width = taffy::LengthValue::length(w);
-    }
-    if (h != h) {
-        h = child->height() > 0 ? child->height() : (child->implicitHeight() > 0 ? child->implicitHeight() : 40);
-        s.size.height = taffy::LengthValue::length(h);
-    } else {
-        s.size.height = taffy::LengthValue::length(h);
-    }
+    const QString w = attached->width();
+    const QString h = attached->height();
+    s.size.width = (w == QLatin1String("auto") || w.isEmpty())
+                       ? std::to_string(fallbackW) + "px"
+                       : toStd(w);
+    s.size.height = (h == QLatin1String("auto") || h.isEmpty())
+                        ? std::to_string(fallbackH) + "px"
+                        : toStd(h);
 
-    s.minSize.width = lenOrAuto(attached->minWidth());
-    s.minSize.height = lenOrAuto(attached->minHeight());
-    s.maxSize.width = lenOrAuto(attached->maxWidth());
-    s.maxSize.height = lenOrAuto(attached->maxHeight());
-    // NaN means "none" on the Rust side
+    s.minSize.width = toStd(attached->minWidth());
+    s.minSize.height = toStd(attached->minHeight());
+    s.maxSize.width = toStd(attached->maxWidth());
+    s.maxSize.height = toStd(attached->maxHeight());
     s.aspectRatio = attached->aspectRatio();
 
-    s.flexBasis = lenOrAuto(attached->flexBasis());
+    s.flexBasis = toStd(attached->flexBasis());
     s.flexGrow = attached->flexGrow();
     s.flexShrink = attached->flexShrink();
 
     s.hasAlignSelf = attached->hasAlignSelf();
-    s.alignSelf = static_cast<qint32>(attached->alignSelf());
+    s.alignSelf = toStd(attached->alignSelf());
     s.hasJustifySelf = attached->hasJustifySelf();
-    s.justifySelf = static_cast<qint32>(attached->justifySelf());
+    s.justifySelf = toStd(attached->justifySelf());
 
-    s.margin.top = lenOrZero(attached->marginTop());
-    s.margin.right = lenOrZero(attached->marginRight());
-    s.margin.bottom = lenOrZero(attached->marginBottom());
-    s.margin.left = lenOrZero(attached->marginLeft());
+    s.margin.top = std::to_string(attached->marginTop()) + "px";
+    s.margin.right = std::to_string(attached->marginRight()) + "px";
+    s.margin.bottom = std::to_string(attached->marginBottom()) + "px";
+    s.margin.left = std::to_string(attached->marginLeft()) + "px";
 
-    s.padding.top = lenOrZero(attached->paddingTop());
-    s.padding.right = lenOrZero(attached->paddingRight());
-    s.padding.bottom = lenOrZero(attached->paddingBottom());
-    s.padding.left = lenOrZero(attached->paddingLeft());
+    s.padding.top = std::to_string(attached->paddingTop()) + "px";
+    s.padding.right = std::to_string(attached->paddingRight()) + "px";
+    s.padding.bottom = std::to_string(attached->paddingBottom()) + "px";
+    s.padding.left = std::to_string(attached->paddingLeft()) + "px";
 
-    s.border.top = lenOrZero(attached->borderTop());
-    s.border.right = lenOrZero(attached->borderRight());
-    s.border.bottom = lenOrZero(attached->borderBottom());
-    s.border.left = lenOrZero(attached->borderLeft());
+    s.border.top = std::to_string(attached->borderTop()) + "px";
+    s.border.right = std::to_string(attached->borderRight()) + "px";
+    s.border.bottom = std::to_string(attached->borderBottom()) + "px";
+    s.border.left = std::to_string(attached->borderLeft()) + "px";
 
-    s.position = static_cast<qint32>(attached->position());
-    s.inset.top = lenOrAuto(attached->insetTop());
-    s.inset.right = lenOrAuto(attached->insetRight());
-    s.inset.bottom = lenOrAuto(attached->insetBottom());
-    s.inset.left = lenOrAuto(attached->insetLeft());
+    s.position = toStd(attached->position());
+    s.inset.top = toStd(attached->insetTop());
+    s.inset.right = toStd(attached->insetRight());
+    s.inset.bottom = toStd(attached->insetBottom());
+    s.inset.left = toStd(attached->insetLeft());
 
     return s;
 }
-
-// --- QQuickLayout ---
 
 void TaffyLayout::updateLayoutItems()
 {
@@ -371,21 +355,16 @@ void TaffyLayout::setStretchFactor(QQuickItem* item, int stretchFactor, Qt::Orie
 
 QSizeF TaffyLayout::sizeHint(Qt::SizeHint whichSizeHint) const
 {
-    return computeSizeHint(whichSizeHint);
-}
-
-QSizeF TaffyLayout::computeSizeHint(Qt::SizeHint which) const
-{
     m_engine.clear();
-    const quint32 root = m_engine.addNode(containerStyle(QSizeF()));
+    const unsigned root = m_engine.addNode(containerStyle(QSizeF()));
     const int n = itemCount();
     for (int i = 0; i < n; ++i) {
         QQuickItem* child = itemAt(i);
-        const quint32 node = m_engine.addNode(itemStyle(child));
+        const unsigned node = m_engine.addNode(itemStyle(child));
         m_engine.addChild(root, node);
     }
 
-    switch (which) {
+    switch (whichSizeHint) {
     case Qt::MinimumSize:
         m_engine.compute(taffy::AvailableSpace::minContent(), taffy::AvailableSpace::minContent());
         break;
@@ -407,14 +386,14 @@ QSizeF TaffyLayout::computeSizeHint(Qt::SizeHint which) const
 void TaffyLayout::rearrange(const QSizeF& size)
 {
     m_engine.clear();
-    const quint32 root = m_engine.addNode(containerStyle(size));
+    const unsigned root = m_engine.addNode(containerStyle(size));
 
     QList<QQuickItem*> layoutItems;
     const int n = itemCount();
     for (int i = 0; i < n; ++i) {
         QQuickItem* child = itemAt(i);
         layoutItems.append(child);
-        const quint32 node = m_engine.addNode(itemStyle(child));
+        const unsigned node = m_engine.addNode(itemStyle(child));
         m_engine.addChild(root, node);
     }
 
@@ -424,7 +403,7 @@ void TaffyLayout::rearrange(const QSizeF& size)
 
     for (int i = 0; i < layoutItems.size(); ++i) {
         taffy::Layout l;
-        if (m_engine.layout(quint32(i + 1), l)) {
+        if (m_engine.layout(unsigned(i + 1), l)) {
             layoutItems[i]->setX(l.location.x);
             layoutItems[i]->setY(l.location.y);
             layoutItems[i]->setSize(QSizeF(l.size.width, l.size.height));
