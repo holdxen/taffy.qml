@@ -107,6 +107,7 @@ void TaffyLayout::onItemStyleChanged()
 void TaffyLayout::componentComplete()
 {
     QQuickLayout::componentComplete();
+    applySizeHintsToItem();
     const int n = itemCount();
     for (int i = 0; i < n; ++i) {
         QQuickItem* child = itemAt(i);
@@ -567,8 +568,23 @@ void TaffyLayout::invalidate(QQuickItem* childItem)
     QQuickLayout::invalidate(childItem);
 }
 
+void TaffyLayout::applySizeHintsToItem()
+{
+    // Same effect as QQuickLayoutPrivate::applySizeHints():
+    // preferred → implicitWidth/Height, min/max → Layout attached.
+    const QSizeF min = sizeHint(Qt::MinimumSize);
+    const QSizeF max = sizeHint(Qt::MaximumSize);
+    const QSizeF pref = sizeHint(Qt::PreferredSize);
+    if (QQuickLayoutAttached* info = attachedLayoutObject(this, true)) {
+        info->setMinimumImplicitSize(min);
+        info->setMaximumImplicitSize(max);
+    }
+    setImplicitSize(pref.width(), pref.height());
+}
+
 void TaffyLayout::updateLayoutItems()
 {
+    applySizeHintsToItem();
     invalidate();
 }
 
@@ -763,6 +779,8 @@ void TaffyLayout::rearrange(const QSizeF& size)
             applyChildGeometry(layoutItems[i], l);
         }
     }
+
+    applySizeHintsToItem();
 }
 
 static int taffyPropertyOffset(const QMetaObject* mo)
