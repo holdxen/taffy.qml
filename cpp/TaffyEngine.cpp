@@ -101,17 +101,17 @@ Engine::Engine()
 
 Engine::~Engine() = default;
 
-unsigned Engine::addNode()
+std::uint32_t Engine::addNode()
 {
     return addNode(Style{});
 }
 
-unsigned Engine::addNode(const Style& style)
+std::uint32_t Engine::addNode(const Style& style)
 {
     return d->engine->engine_add_node(toFfi(style));
 }
 
-bool Engine::addChild(unsigned parent, unsigned child)
+bool Engine::addChild(std::uint32_t parent, std::uint32_t child)
 {
     try {
         d->engine->engine_add_child(parent, child);
@@ -121,7 +121,7 @@ bool Engine::addChild(unsigned parent, unsigned child)
     }
 }
 
-bool Engine::setStyle(unsigned node, const Style& style)
+bool Engine::setStyle(std::uint32_t node, const Style& style)
 {
     try {
         d->engine->engine_set_style(node, toFfi(style));
@@ -151,7 +151,7 @@ bool Engine::compute(double availableWidth, double availableHeight)
                    AvailableSpace::definite(availableHeight));
 }
 
-bool Engine::layout(unsigned node, Layout& out) const
+bool Engine::layout(std::uint32_t node, Layout& out) const
 {
     try {
         const ::Layout l = d->engine->engine_layout(node);

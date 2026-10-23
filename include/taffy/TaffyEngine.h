@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
@@ -31,7 +32,7 @@ struct Point
 
 struct Layout
 {
-    unsigned order = 0;
+    std::uint32_t order = 0;
     Point location;
     Size size;
     Rect border;
@@ -116,7 +117,7 @@ struct Style
     std::string overflowX = "visible";
     std::string overflowY = "visible";
     double scrollbarWidth = 0.0;
-    unsigned contain = 0;
+    std::uint32_t contain = 0;
     std::string cssFloat = "none";
     std::string clear = "none";
     std::string position = "static";
@@ -138,7 +139,7 @@ struct Style
     std::string textAlign = "auto";
     std::string flexDirection = "row";
     std::string flexWrap = "nowrap";
-    unsigned flexLineCount = 1;
+    std::uint32_t flexLineCount = 1;
     std::string flexBasis = "auto";
     double flexGrow = 0.0;
     double flexShrink = 1.0;
@@ -166,13 +167,13 @@ public:
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
 
-    unsigned addNode();
-    unsigned addNode(const Style& style);
-    bool addChild(unsigned parent, unsigned child);
-    bool setStyle(unsigned node, const Style& style);
+    std::uint32_t addNode();
+    std::uint32_t addNode(const Style& style);
+    bool addChild(std::uint32_t parent, std::uint32_t child);
+    bool setStyle(std::uint32_t node, const Style& style);
     bool compute(const AvailableSpace& width, const AvailableSpace& height);
     bool compute(double availableWidth, double availableHeight);
-    bool layout(unsigned node, Layout& out) const;
+    bool layout(std::uint32_t node, Layout& out) const;
     void clear();
 
 private:
