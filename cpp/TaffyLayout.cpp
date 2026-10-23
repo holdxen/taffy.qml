@@ -271,9 +271,7 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     s.flexGrow = attached->flexGrow();
     s.flexShrink = attached->flexShrink();
 
-    s.hasAlignSelf = attached->hasAlignSelf();
     s.alignSelf = toStd(attached->alignSelf());
-    s.hasJustifySelf = attached->hasJustifySelf();
     s.justifySelf = toStd(attached->justifySelf());
 
     s.margin.top = std::to_string(attached->marginTop()) + "px";

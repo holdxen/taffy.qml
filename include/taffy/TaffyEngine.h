@@ -130,11 +130,9 @@ struct Style
     LengthRect padding;
     LengthRect border;
     std::string alignItems = "normal";
-    bool hasAlignSelf = false;
-    std::string alignSelf = "normal";
+    std::string alignSelf; // empty or "auto" = unset
     std::string justifyItems = "normal";
-    bool hasJustifySelf = false;
-    std::string justifySelf = "normal";
+    std::string justifySelf; // empty or "auto" = unset
     std::string alignContent = "normal";
     std::string justifyContent = "normal";
     LengthSize gap;

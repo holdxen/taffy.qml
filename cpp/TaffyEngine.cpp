@@ -52,10 +52,8 @@ namespace {
     o.padding = toFfi(s.padding);
     o.border = toFfi(s.border);
     o.align_items = s.alignItems;
-    o.has_align_self = s.hasAlignSelf;
     o.align_self = s.alignSelf;
     o.justify_items = s.justifyItems;
-    o.has_justify_self = s.hasJustifySelf;
     o.justify_self = s.justifySelf;
     o.align_content = s.alignContent;
     o.justify_content = s.justifyContent;

@@ -296,22 +296,3 @@ void TaffyLayoutAttached::setBorderLeft(qreal v)
     emit itemStyleChanged();
 }
 
-bool TaffyLayoutAttached::hasAlignSelf() const
-{
-    return m_hasAlignSelf;
-}
-void TaffyLayoutAttached::setHasAlignSelf(bool v)
-{
-    m_hasAlignSelf = v;
-    emit itemStyleChanged();
-}
-
-bool TaffyLayoutAttached::hasJustifySelf() const
-{
-    return m_hasJustifySelf;
-}
-void TaffyLayoutAttached::setHasJustifySelf(bool v)
-{
-    m_hasJustifySelf = v;
-    emit itemStyleChanged();
-}

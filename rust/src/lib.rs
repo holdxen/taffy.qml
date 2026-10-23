@@ -104,10 +104,8 @@ pub mod ffi {
         padding: LengthRect,
         border: LengthRect,
         align_items: String,
-        has_align_self: bool,
         align_self: String,
         justify_items: String,
-        has_justify_self: bool,
         justify_self: String,
         align_content: String,
         justify_content: String,
@@ -289,6 +287,16 @@ fn parse_align_content(s: &str) -> AlignContent {
     parse_or(s, AlignContent::NORMAL)
 }
 
+/// Empty string or "auto" means unset (taffy Option::None).
+fn parse_optional_align(s: &str) -> Option<AlignItems> {
+    let s = s.trim();
+    if s.is_empty() || s == "auto" {
+        None
+    } else {
+        Some(parse_align_items(s))
+    }
+}
+
 fn to_taffy_style(s: &ffi::NodeStyle) -> Style {
     let dim = |v: &str| parse_dim(v);
     let size_dim = |sz: &ffi::LengthSize| TSize {
@@ -355,17 +363,9 @@ fn to_taffy_style(s: &ffi::NodeStyle) -> Style {
         padding: rect_lp(&s.padding),
         border: rect_lp(&s.border),
         align_items: parse_align_items(&s.align_items),
-        align_self: if s.has_align_self {
-            Some(parse_align_items(&s.align_self))
-        } else {
-            None
-        },
+        align_self: parse_optional_align(&s.align_self),
         justify_items: parse_align_items(&s.justify_items),
-        justify_self: if s.has_justify_self {
-            Some(parse_align_items(&s.justify_self))
-        } else {
-            None
-        },
+        justify_self: parse_optional_align(&s.justify_self),
         align_content: parse_align_content(&s.align_content),
         justify_content: parse_align_content(&s.justify_content),
         gap: size_lp(&s.gap),
