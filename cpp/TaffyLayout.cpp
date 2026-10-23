@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include <QDebug>
+#include <QTextStream>
 #include <QtQml/qqml.h>
 #include <QtQuick/private/qquickanchors_p.h>
 #include <QtQuick/private/qquickitem_p.h>
@@ -742,4 +743,24 @@ void TaffyLayout::rearrange(const QSizeF& size)
             applyChildGeometry(layoutItems[i], l);
         }
     }
+}
+
+QString TaffyLayout::dumpTree() const
+{
+    QString s;
+    QTextStream out(&s);
+    out << "TaffyLayout(" << static_cast<const void*>(this) << ") children=" << itemCount() << "\n";
+    for (int i = 0; i < itemCount(); ++i) {
+        QQuickItem* child = itemAt(i);
+        out << "\n[" << i << "] " << child->metaObject()->className()
+            << " " << static_cast<const void*>(child) << "\n";
+        auto* attached = qobject_cast<TaffyLayoutAttached*>(
+            qmlAttachedPropertiesObject<TaffyLayout>(child, false));
+        if (!attached) {
+            out << "  (no TaffyLayout attached)\n";
+            continue;
+        }
+        out << attached->dump();
+    }
+    return s;
 }

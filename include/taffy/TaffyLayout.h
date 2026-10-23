@@ -51,6 +51,8 @@ public:
     ~TaffyLayout() override;
 
     static TaffyLayoutAttached* qmlAttachedProperties(QObject* object);
+    /** Dump TaffyLayout attached properties of every child (debug). */
+    Q_INVOKABLE QString dumpTree() const;
 
     QString display() const;
     void setDisplay(const QString& v);
