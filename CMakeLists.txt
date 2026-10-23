@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 
 project(taffy
     VERSION 0.1.0
-    DESCRIPTION "Qt Quick item library; layout math in Rust (taffy), enums via cxx-qt qenum"
+    DESCRIPTION "Qt Quick item library; layout math in Rust (taffy + cxx), CSS-string style"
     LANGUAGES CXX
 )
 
@@ -23,7 +23,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 # --------------------------------------------------------------------
-# Qt 6
+# Qt 6 (C++ only)
 # --------------------------------------------------------------------
 find_package(Qt6 REQUIRED COMPONENTS
     Core
@@ -38,35 +38,33 @@ find_package(Qt6 REQUIRED COMPONENTS
 
 if(MSVC)
     set_property(TARGET
-        Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::QuickPrivate
+        Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2
+        Qt6::QuickPrivate Qt6::QuickLayouts Qt6::QuickLayoutsPrivate
         PROPERTY MAP_IMPORTED_CONFIG_DEBUG "RELEASE")
 endif()
 
 # --------------------------------------------------------------------
-# cxx-qt (enums / qenum) + Corrosion
+# Rust staticlib via Corrosion + cxx (no cxx-qt)
 # --------------------------------------------------------------------
-find_package(CxxQt QUIET)
-if(NOT CxxQt_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(CxxQt
-        GIT_REPOSITORY https://github.com/kdab/cxx-qt-cmake.git
-        GIT_TAG 0.10.0
-    )
-    FetchContent_MakeAvailable(CxxQt)
-endif()
+include(FetchContent)
+FetchContent_Declare(Corrosion
+    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    GIT_TAG v0.5.2
+)
+FetchContent_MakeAvailable(Corrosion)
 
-# Public Qt modules only — private modules have no .prl (link them on C++ targets).
-cxx_qt_import_crate(
+corrosion_import_crate(
     MANIFEST_PATH rust/Cargo.toml
     CRATES taffy_rust
     LOCKED
-    QT_MODULES
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Qml
-        Qt6::Quick
-        Qt6::QuickControls2
 )
+
+if(COMMAND corrosion_add_cxxbridge)
+    corrosion_add_cxxbridge(taffy_cxxbridge
+        CRATE taffy_rust
+        FILES lib.rs
+    )
+endif()
 
 # --------------------------------------------------------------------
 # C++ library
@@ -82,7 +80,6 @@ add_library(taffy
     include/taffy/TaffyItem.h
     include/taffy/TaffyLayout.h
     include/taffy/TaffyLayoutAttached.h
-    include/taffy/TaffyTypes.h
 )
 add_library(taffy::taffy ALIAS taffy)
 
@@ -104,6 +101,10 @@ target_link_libraries(taffy
         Qt6::QuickLayoutsPrivate
         taffy_rust
 )
+
+if(TARGET taffy_cxxbridge)
+    target_link_libraries(taffy PRIVATE taffy_cxxbridge)
+endif()
 
 if(TAFFY_IS_TOP_LEVEL)
     add_subdirectory(examples/minimal)

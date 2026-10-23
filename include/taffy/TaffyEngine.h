@@ -1,11 +1,9 @@
 #pragma once
 
-#include <cmath>
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
-
-#include <taffy/TaffyTypes.h>
 
 namespace taffy {
 
@@ -33,7 +31,7 @@ struct Point
 
 struct Layout
 {
-    quint32 order = 0;
+    unsigned order = 0;
     Point location;
     Size size;
     Rect border;
@@ -74,91 +72,55 @@ struct AvailableSpace
     }
 };
 
-/** length / percentage / auto / keyword value. kind matches LengthKind qenum. */
-struct LengthValue
-{
-    qint32 kind = 0; // 0 Auto, 1 Length, 2 Percent, 8 Zero
-    double value = 0.0;
-
-    static LengthValue autoValue()
-    {
-        return {};
-    }
-    static LengthValue length(double v)
-    {
-        LengthValue s;
-        s.kind = 1;
-        s.value = v;
-        return s;
-    }
-    static LengthValue percent(double v)
-    {
-        LengthValue s;
-        s.kind = 2;
-        s.value = v;
-        return s;
-    }
-    static LengthValue zero()
-    {
-        LengthValue s;
-        s.kind = 8;
-        return s;
-    }
-};
+/** CSS-like length string: "auto", "100px", "50%", "min-content", "0" */
+using CssLength = std::string;
 
 struct LengthSize
 {
-    LengthValue width;
-    LengthValue height;
+    CssLength width = "auto";
+    CssLength height = "auto";
 };
 
 struct LengthRect
 {
-    LengthValue left;
-    LengthValue right;
-    LengthValue top;
-    LengthValue bottom;
-};
-
-struct Placement
-{
-    qint32 kind = 0; // 0 Auto, 1 Line, 2 Span
-    double value = 0.0;
+    CssLength left = "0";
+    CssLength right = "0";
+    CssLength top = "0";
+    CssLength bottom = "0";
 };
 
 struct LinePlacement
 {
-    Placement start;
-    Placement end;
+    std::string start = "auto";
+    std::string end = "auto";
 };
 
 struct TrackSize
 {
-    qint32 minKind = 0;
-    double minValue = 0.0;
-    qint32 maxKind = 0;
-    double maxValue = 0.0;
+    std::string min = "auto";
+    std::string max = "auto";
 };
 
 /**
- * Full taffy::Style surface (mirrors rust ffi::NodeStyle).
- * Enum fields use integer codes matching TaffyTypes Q_ENUMs.
+ * Full style surface; keyword fields are CSS strings.
+ * Examples: display="flex", flex_direction="row", align_items="center",
+ *           width="100px", flex_basis="auto"
  */
 struct Style
 {
-    qint32 display = 2; // Display::Flex
+    std::string display = "flex";
     bool itemIsTable = false;
     bool itemIsReplaced = false;
     bool itemIsCompressibleReplaced = false;
-    qint32 boxSizing = 0; // BoxSizing::BorderBox
-    qint32 direction = 0; // StyleDirection::Ltr
-    qint32 overflowX = 0; // Overflow::Visible
-    qint32 overflowY = 0;
+    std::string boxSizing = "border-box";
+    std::string direction = "ltr";
+    std::string overflowX = "visible";
+    std::string overflowY = "visible";
     double scrollbarWidth = 0.0;
-    quint32 contain = 0;
-    qint32 cssFloat = 0; // CssFloat::None
-    qint32 clear = 0;
-    qint32 position = 0;
+    unsigned contain = 0;
+    std::string cssFloat = "none";
+    std::string clear = "none";
+    std::string position = "static";
     LengthRect inset;
     LengthSize size;
     LengthSize minSize;
@@ -167,23 +129,27 @@ struct Style
     LengthRect margin;
     LengthRect padding;
     LengthRect border;
-    qint32 alignItems = 0;
+    std::string alignItems = "normal";
     bool hasAlignSelf = false;
-    qint32 alignSelf = 0;
-    qint32 justifyItems = 0;
+    std::string alignSelf = "normal";
+    std::string justifyItems = "normal";
     bool hasJustifySelf = false;
-    qint32 justifySelf = 0;
-    qint32 alignContent = 0;
-    qint32 justifyContent = 0;
+    std::string justifySelf = "normal";
+    std::string alignContent = "normal";
+    std::string justifyContent = "normal";
     LengthSize gap;
-    qint32 textAlign = 0;
-    qint32 flexDirection = 0;
-    qint32 flexWrap = 0;
-    quint32 flexLineCount = 1;
-    LengthValue flexBasis;
+    std::string textAlign = "auto";
+    std::string flexDirection = "row";
+    std::string flexWrap = "nowrap";
+    unsigned flexLineCount = 1;
+    std::string flexBasis = "auto";
     double flexGrow = 0.0;
     double flexShrink = 1.0;
-    qint32 gridAutoFlow = 0;
+    std::string gridAutoFlow = "row";
+    std::vector<TrackSize> gridTemplateRows;
+    std::vector<TrackSize> gridTemplateColumns;
+    std::vector<TrackSize> gridAutoRows;
+    std::vector<TrackSize> gridAutoColumns;
     LinePlacement gridRow;
     LinePlacement gridColumn;
 };
@@ -197,13 +163,13 @@ public:
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
 
-    quint32 addNode();
-    quint32 addNode(const Style& style);
-    bool addChild(quint32 parent, quint32 child);
-    bool setStyle(quint32 node, const Style& style);
+    unsigned addNode();
+    unsigned addNode(const Style& style);
+    bool addChild(unsigned parent, unsigned child);
+    bool setStyle(unsigned node, const Style& style);
     bool compute(const AvailableSpace& width, const AvailableSpace& height);
-    bool compute(qreal availableWidth, qreal availableHeight);
-    bool layout(quint32 node, Layout& out) const;
+    bool compute(double availableWidth, double availableHeight);
+    bool layout(unsigned node, Layout& out) const;
     void clear();
 
 private:

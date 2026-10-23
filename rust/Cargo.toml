@@ -3,15 +3,15 @@ name = "taffy_rust"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "taffy layout engine (cxx) + style enums auto-registered to Qt (cxx-qt qenum)"
+description = "taffy layout engine exported to C++ via cxx; CSS-like string style API"
 
 [lib]
 crate-type = ["staticlib"]
 
 [dependencies]
 cxx = "1.0"
-cxx-qt = "0.10"
-taffy = "0.15.0"
+# parse = FromStr for CSS keywords / dimensions
+taffy = { version = "0.15.0", features = ["parse"] }
 
 [build-dependencies]
-cxx-qt-build = "0.10"
+cxx-build = "1.0"
