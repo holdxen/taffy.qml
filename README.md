@@ -83,63 +83,63 @@ int main(int argc, char* argv[])
 
 How children are arranged. All properties notify via `styleChanged`.
 
-| Property | QML type | Values / notes |
-|---|---|---|
-| `display` | `string` | `block`, `flow-root`, `flex`, `grid`, `none` |
-| `flexDirection` | `string` | `row`, `column`, `row-reverse`, `column-reverse` |
-| `flexWrap` | `string` | `nowrap`, `wrap`, `wrap-reverse`, `balance`, `balance-reverse` |
-| `flexLineCount` | `int` | ≥ 1 (used with balance wraps) |
-| `alignItems` | `string` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `self-start`, `self-end`, `center`, `baseline`, `stretch` |
-| `alignContent` | `string` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `center`, `stretch`, `space-between`, `space-evenly`, `space-around` |
-| `justifyContent` | `string` | same set as `alignContent` |
-| `gapWidth` | `real` | px; `RESET` → 0 |
-| `gapHeight` | `real` | px; `RESET` → 0 |
-| `gridAutoFlow` | `string` | `row`, `column`, `row-dense`, `column-dense` |
-| `gridTemplateRows` | `string` | CSS track list, e.g. `"48px 1fr"`, `"repeat(2, 100px)"`, `"minmax(80px, 1fr)"` |
-| `gridTemplateColumns` | `string` | same form as rows |
-| `gridAutoRows` | `string` | track sizes, e.g. `"auto 100px"` |
-| `gridAutoColumns` | `string` | same form as auto rows |
-| `gridTemplateAreas` | `string` | `"hd hd" "main side"` or `hd hd / main side` |
-| `gridTemplateRowNames` | `stringlist` | one entry per track, e.g. `["start end", "line1"]` |
-| `gridTemplateColumnNames` | `stringlist` | same as row names |
-| `boxSizing` | `string` | `border-box`, `content-box` |
-| `overflowX` / `overflowY` | `string` | `visible`, `clip`, `hidden`, `scroll` |
-| `scrollbarWidth` | `real` | px |
-| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | px |
-| `direction` | `string` | `ltr`, `rtl` |
-| `taffyStyle` | `var` (`QVariantMap`) | read-only debug snapshot |
+| Property | QML type | Default | Values / notes |
+|---|---|---|---|
+| `display` | `string` | `"flex"` | `block`, `flow-root`, `flex`, `grid`, `none` |
+| `flexDirection` | `string` | `"row"` | `row`, `column`, `row-reverse`, `column-reverse` |
+| `flexWrap` | `string` | `"nowrap"` | `nowrap`, `wrap`, `wrap-reverse`, `balance`, `balance-reverse` |
+| `flexLineCount` | `int` | `1` | ≥ 1 (used with balance wraps) |
+| `alignItems` | `string` | `"normal"` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `self-start`, `self-end`, `center`, `baseline`, `stretch` |
+| `alignContent` | `string` | `"normal"` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `center`, `stretch`, `space-between`, `space-evenly`, `space-around` |
+| `justifyContent` | `string` | `"normal"` | same set as `alignContent` |
+| `gapWidth` | `real` | `0` | px; `RESET` → 0 |
+| `gapHeight` | `real` | `0` | px; `RESET` → 0 |
+| `gridAutoFlow` | `string` | `"row"` | `row`, `column`, `row-dense`, `column-dense` |
+| `gridTemplateRows` | `string` | `""` | CSS track list, e.g. `"48px 1fr"`, `"repeat(2, 100px)"` |
+| `gridTemplateColumns` | `string` | `""` | same form as rows |
+| `gridAutoRows` | `string` | `""` | track sizes, e.g. `"auto 100px"` |
+| `gridAutoColumns` | `string` | `""` | same form as auto rows |
+| `gridTemplateAreas` | `string` | `""` | `"hd hd" "main side"` or `hd hd / main side` |
+| `gridTemplateRowNames` | `stringlist` | `[]` | one entry per track, e.g. `["start end", "line1"]` |
+| `gridTemplateColumnNames` | `stringlist` | `[]` | same as row names |
+| `boxSizing` | `string` | `"border-box"` | `border-box`, `content-box` |
+| `overflowX` / `overflowY` | `string` | `"visible"` | `visible`, `clip`, `hidden`, `scroll` |
+| `scrollbarWidth` | `real` | `0` | px |
+| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | `0` | px |
+| `direction` | `string` | `"ltr"` | `ltr`, `rtl` |
+| `taffyStyle` | `var` (`QVariantMap`) | — | read-only debug snapshot |
 
 ### TaffyLayout.<var> attached (item)
 
 Set on **children** of `TaffyLayout`. Notify via `itemStyleChanged`.
 
-| Property | QML type | Values / notes |
-|---|---|---|
-| `width` / `height` | `string` | length: `"100"`, `"100px"`, `"50%"`, `"auto"`, `"min-content"`, `"max-content"` |
-| `minWidth` / `minHeight` | `string` | length (same syntax) |
-| `maxWidth` / `maxHeight` | `string` | length |
-| `aspectRatio` | `real` | width/height ratio; `NaN` = unset |
-| `flexBasis` | `string` | length: `"0"`, `"0%"`, `"auto"`, `"100px"` |
-| `flexGrow` | `real` | default `0` |
-| `flexShrink` | `real` | default `1` |
-| `alignSelf` | `string` | empty/`auto` = unset; else `normal`, `start`, `center`, `stretch`, … (same as `alignItems`) |
-| `justifySelf` | `string` | empty/`auto` = unset; same keywords as `alignSelf` |
-| `marginTop` / `Right` / `Bottom` / `Left` | `real` | px |
-| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | px |
-| `borderTop` / `Right` / `Bottom` / `Left` | `real` | px |
-| `position` | `string` | `static`, `relative`, `absolute`, `fixed`, `sticky` |
-| `insetTop` / `Right` / `Bottom` / `Left` | `string` | length: `"auto"`, `"8px"`, `"10%"` |
-| `gridRow` | `string` | `"auto"`, `"2"`, `"span 2"`, `"1 / 3"` |
-| `gridColumn` | `string` | same form as `gridRow` |
-| `boxSizing` | `string` | `border-box`, `content-box` |
-| `overflowX` / `overflowY` | `string` | `visible`, `clip`, `hidden`, `scroll` |
-| `cssFloat` | `string` | `none`, `left`, `right` |
-| `clear` | `string` | `none`, `left`, `right`, `both` |
-| `textAlign` | `string` | `auto`, `left`, `right`, `center` (and `legacy-left` etc.) |
-| `itemIsTable` | `bool` | default `false` |
-| `itemIsReplaced` | `bool` | default `false` |
-| `itemIsCompressibleReplaced` | `bool` | default `false` |
-| `taffyStyle` | `var` (`QVariantMap`) | read-only debug snapshot |
+| Property | QML type | Default | Values / notes |
+|---|---|---|---|
+| `width` / `height` | `string` | `"auto"` | length: `"100"`, `"100px"`, `"50%"`, `"auto"`, `"min-content"`, `"max-content"` |
+| `minWidth` / `minHeight` | `string` | `"auto"` | length (same syntax) |
+| `maxWidth` / `maxHeight` | `string` | `"auto"` | length |
+| `aspectRatio` | `real` | `NaN` | width/height ratio; `NaN` = unset |
+| `flexBasis` | `string` | `"auto"` | length: `"0"`, `"0%"`, `"auto"`, `"100px"` |
+| `flexGrow` | `real` | `0` | |
+| `flexShrink` | `real` | `1` | |
+| `alignSelf` | `string` | `""` (unset) | empty/`auto` = unset; else same keywords as `alignItems` |
+| `justifySelf` | `string` | `""` (unset) | empty/`auto` = unset; same keywords as `alignSelf` |
+| `marginTop` / `Right` / `Bottom` / `Left` | `real` | `0` | px |
+| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | `0` | px |
+| `borderTop` / `Right` / `Bottom` / `Left` | `real` | `0` | px |
+| `position` | `string` | `"static"` | `static`, `relative`, `absolute`, `fixed`, `sticky` |
+| `insetTop` / `Right` / `Bottom` / `Left` | `string` | `"auto"` | length: `"auto"`, `"8px"`, `"10%"` |
+| `gridRow` | `string` | `"auto"` | `"auto"`, `"2"`, `"span 2"`, `"1 / 3"` |
+| `gridColumn` | `string` | `"auto"` | same form as `gridRow` |
+| `boxSizing` | `string` | `"border-box"` | `border-box`, `content-box` |
+| `overflowX` / `overflowY` | `string` | `"visible"` | `visible`, `clip`, `hidden`, `scroll` |
+| `cssFloat` | `string` | `"none"` | `none`, `left`, `right` |
+| `clear` | `string` | `"none"` | `none`, `left`, `right`, `both` |
+| `textAlign` | `string` | `"auto"` | `auto`, `left`, `right`, `center` (and `legacy-left` etc.) |
+| `itemIsTable` | `bool` | `false` | |
+| `itemIsReplaced` | `bool` | `false` | |
+| `itemIsCompressibleReplaced` | `bool` | `false` | |
+| `taffyStyle` | `var` (`QVariantMap`) | — | read-only debug snapshot |
 
 ### Length syntax
 
