@@ -84,63 +84,63 @@ int main(int argc, char* argv[])
 
 控制子项如何排列。变更通过 `styleChanged` 通知。
 
-| 属性 | QML 类型 | 取值 / 说明 |
-|---|---|---|
-| `display` | `string` | `block`, `flow-root`, `flex`, `grid`, `none` |
-| `flexDirection` | `string` | `row`, `column`, `row-reverse`, `column-reverse` |
-| `flexWrap` | `string` | `nowrap`, `wrap`, `wrap-reverse`, `balance`, `balance-reverse` |
-| `flexLineCount` | `int` | ≥ 1（配合 balance 换行） |
-| `alignItems` | `string` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `self-start`, `self-end`, `center`, `baseline`, `stretch` |
-| `alignContent` | `string` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `center`, `stretch`, `space-between`, `space-evenly`, `space-around` |
-| `justifyContent` | `string` | 与 `alignContent` 相同 |
-| `gapWidth` | `real` | 像素；`RESET` 恢复 0 |
-| `gapHeight` | `real` | 像素；`RESET` 恢复 0 |
-| `gridAutoFlow` | `string` | `row`, `column`, `row-dense`, `column-dense` |
-| `gridTemplateRows` | `string` | CSS 轨道列表，如 `"48px 1fr"`、`"repeat(2, 100px)"`、`"minmax(80px, 1fr)"` |
-| `gridTemplateColumns` | `string` | 同行轨道写法 |
-| `gridAutoRows` | `string` | 轨道尺寸，如 `"auto 100px"` |
-| `gridAutoColumns` | `string` | 同 `gridAutoRows` |
-| `gridTemplateAreas` | `string` | `"hd hd" "main side"` 或 `hd hd / main side` |
-| `gridTemplateRowNames` | `stringlist` | 每条轨道一项，如 `["start end", "line1"]` |
-| `gridTemplateColumnNames` | `stringlist` | 同行命名 |
-| `boxSizing` | `string` | `border-box`, `content-box` |
-| `overflowX` / `overflowY` | `string` | `visible`, `clip`, `hidden`, `scroll` |
-| `scrollbarWidth` | `real` | 像素 |
-| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | 像素 |
-| `direction` | `string` | `ltr`, `rtl` |
-| `taffyStyle` | `var`（`QVariantMap`） | 只读调试快照 |
+| 属性 | QML 类型 | 默认值 | 取值 / 说明 |
+|---|---|---|---|
+| `display` | `string` | `"flex"` | `block`, `flow-root`, `flex`, `grid`, `none` |
+| `flexDirection` | `string` | `"row"` | `row`, `column`, `row-reverse`, `column-reverse` |
+| `flexWrap` | `string` | `"nowrap"` | `nowrap`, `wrap`, `wrap-reverse`, `balance`, `balance-reverse` |
+| `flexLineCount` | `int` | `1` | ≥ 1（配合 balance 换行） |
+| `alignItems` | `string` | `"normal"` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `self-start`, `self-end`, `center`, `baseline`, `stretch` |
+| `alignContent` | `string` | `"normal"` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `center`, `stretch`, `space-between`, `space-evenly`, `space-around` |
+| `justifyContent` | `string` | `"normal"` | 与 `alignContent` 相同 |
+| `gapWidth` | `real` | `0` | 像素；`RESET` 恢复 0 |
+| `gapHeight` | `real` | `0` | 像素；`RESET` 恢复 0 |
+| `gridAutoFlow` | `string` | `"row"` | `row`, `column`, `row-dense`, `column-dense` |
+| `gridTemplateRows` | `string` | `""` | CSS 轨道列表，如 `"48px 1fr"`、`"repeat(2, 100px)"` |
+| `gridTemplateColumns` | `string` | `""` | 同行轨道写法 |
+| `gridAutoRows` | `string` | `""` | 轨道尺寸，如 `"auto 100px"` |
+| `gridAutoColumns` | `string` | `""` | 同 `gridAutoRows` |
+| `gridTemplateAreas` | `string` | `""` | `"hd hd" "main side"` 或 `hd hd / main side` |
+| `gridTemplateRowNames` | `stringlist` | `[]` | 每条轨道一项，如 `["start end", "line1"]` |
+| `gridTemplateColumnNames` | `stringlist` | `[]` | 同行命名 |
+| `boxSizing` | `string` | `"border-box"` | `border-box`, `content-box` |
+| `overflowX` / `overflowY` | `string` | `"visible"` | `visible`, `clip`, `hidden`, `scroll` |
+| `scrollbarWidth` | `real` | `0` | 像素 |
+| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | `0` | 像素 |
+| `direction` | `string` | `"ltr"` | `ltr`, `rtl` |
+| `taffyStyle` | `var`（`QVariantMap`） | — | 只读调试快照 |
 
 ### TaffyLayout.附加属性（子项）
 
 写在 **`TaffyLayout` 的子元素** 上。变更通过 `itemStyleChanged` 通知。
 
-| 属性 | QML 类型 | 取值 / 说明 |
-|---|---|---|
-| `width` / `height` | `string` | 长度：`"100"`、`"100px"`、`"50%"`、`"auto"`、`"min-content"`、`"max-content"` |
-| `minWidth` / `minHeight` | `string` | 长度（语法同上） |
-| `maxWidth` / `maxHeight` | `string` | 长度 |
-| `aspectRatio` | `real` | 宽/高比；`NaN` 表示未设置 |
-| `flexBasis` | `string` | 长度：`"0"`、`"0%"`、`"auto"`、`"100px"` |
-| `flexGrow` | `real` | 默认 `0` |
-| `flexShrink` | `real` | 默认 `1` |
-| `alignSelf` | `string` | 空/`auto` = 未设置；否则同 `alignItems` 关键字 |
-| `justifySelf` | `string` | 空/`auto` = 未设置；关键字同 `alignSelf` |
-| `marginTop` / `Right` / `Bottom` / `Left` | `real` | 像素 |
-| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | 像素 |
-| `borderTop` / `Right` / `Bottom` / `Left` | `real` | 像素 |
-| `position` | `string` | `static`, `relative`, `absolute`, `fixed`, `sticky` |
-| `insetTop` / `Right` / `Bottom` / `Left` | `string` | 长度：`"auto"`、`"8px"`、`"10%"` |
-| `gridRow` | `string` | `"auto"`、`"2"`、`"span 2"`、`"1 / 3"` |
-| `gridColumn` | `string` | 同 `gridRow` |
-| `boxSizing` | `string` | `border-box`, `content-box` |
-| `overflowX` / `overflowY` | `string` | `visible`, `clip`, `hidden`, `scroll` |
-| `cssFloat` | `string` | `none`, `left`, `right` |
-| `clear` | `string` | `none`, `left`, `right`, `both` |
-| `textAlign` | `string` | `auto`, `left`, `right`, `center`（及 `legacy-left` 等） |
-| `itemIsTable` | `bool` | 默认 `false` |
-| `itemIsReplaced` | `bool` | 默认 `false` |
-| `itemIsCompressibleReplaced` | `bool` | 默认 `false` |
-| `taffyStyle` | `var`（`QVariantMap`） | 只读调试快照 |
+| 属性 | QML 类型 | 默认值 | 取值 / 说明 |
+|---|---|---|---|
+| `width` / `height` | `string` | `"auto"` | 长度：`"100"`、`"100px"`、`"50%"`、`"auto"`、`"min-content"`、`"max-content"` |
+| `minWidth` / `minHeight` | `string` | `"auto"` | 长度（语法同上） |
+| `maxWidth` / `maxHeight` | `string` | `"auto"` | 长度 |
+| `aspectRatio` | `real` | `NaN` | 宽/高比；`NaN` = 未设置 |
+| `flexBasis` | `string` | `"auto"` | 长度：`"0"`、`"0%"`、`"auto"`、`"100px"` |
+| `flexGrow` | `real` | `0` | |
+| `flexShrink` | `real` | `1` | |
+| `alignSelf` | `string` | `""`（未设置） | 空/`auto` = 未设置；否则同 `alignItems` 关键字 |
+| `justifySelf` | `string` | `""`（未设置） | 空/`auto` = 未设置；关键字同 `alignSelf` |
+| `marginTop` / `Right` / `Bottom` / `Left` | `real` | `0` | 像素 |
+| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | `0` | 像素 |
+| `borderTop` / `Right` / `Bottom` / `Left` | `real` | `0` | 像素 |
+| `position` | `string` | `"static"` | `static`, `relative`, `absolute`, `fixed`, `sticky` |
+| `insetTop` / `Right` / `Bottom` / `Left` | `string` | `"auto"` | 长度：`"auto"`、`"8px"`、`"10%"` |
+| `gridRow` | `string` | `"auto"` | `"auto"`、`"2"`、`"span 2"`、`"1 / 3"` |
+| `gridColumn` | `string` | `"auto"` | 同 `gridRow` |
+| `boxSizing` | `string` | `"border-box"` | `border-box`, `content-box` |
+| `overflowX` / `overflowY` | `string` | `"visible"` | `visible`, `clip`, `hidden`, `scroll` |
+| `cssFloat` | `string` | `"none"` | `none`, `left`, `right` |
+| `clear` | `string` | `"none"` | `none`, `left`, `right`, `both` |
+| `textAlign` | `string` | `"auto"` | `auto`, `left`, `right`, `center`（及 `legacy-left` 等） |
+| `itemIsTable` | `bool` | `false` | |
+| `itemIsReplaced` | `bool` | `false` | |
+| `itemIsCompressibleReplaced` | `bool` | `false` | |
+| `taffyStyle` | `var`（`QVariantMap`） | — | 只读调试快照 |
 
 ### 长度写法
 
