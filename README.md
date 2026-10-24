@@ -77,28 +77,88 @@ int main(int argc, char* argv[])
 }
 ```
 
-## Property model
+## Property reference
 
-```text
-TaffyLayout (container — how children are arranged)
-  display / flexDirection / flexWrap / flexLineCount
-  alignItems / alignContent / justifyContent
-  gapWidth / gapHeight
-  gridTemplate* / gridAuto* / gridAutoFlow
-  boxSizing / overflowX/Y / scrollbarWidth
-  paddingTop/Right/Bottom/Left / direction
+### TaffyLayout (container)
 
-TaffyLayout attached (item — how a child sits in its parent)
-  width / height / min* / max* (QString, CSS lengths)
-  flexGrow / flexShrink / flexBasis
-  alignSelf / justifySelf
-  margin* / padding* / border*
-  position / inset*
-  gridRow / gridColumn
-  cssFloat / clear / textAlign / …
+How children are arranged. All properties notify via `styleChanged`.
+
+| Property | QML type | Values / notes |
+|---|---|---|
+| `display` | `string` | `block`, `flow-root`, `flex`, `grid`, `none` |
+| `flexDirection` | `string` | `row`, `column`, `row-reverse`, `column-reverse` |
+| `flexWrap` | `string` | `nowrap`, `wrap`, `wrap-reverse`, `balance`, `balance-reverse` |
+| `flexLineCount` | `int` | ≥ 1 (used with balance wraps) |
+| `alignItems` | `string` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `self-start`, `self-end`, `center`, `baseline`, `stretch` |
+| `alignContent` | `string` | `normal`, `start`, `end`, `flex-start`, `flex-end`, `center`, `stretch`, `space-between`, `space-evenly`, `space-around` |
+| `justifyContent` | `string` | same set as `alignContent` |
+| `gapWidth` | `real` | px; `RESET` → 0 |
+| `gapHeight` | `real` | px; `RESET` → 0 |
+| `gridAutoFlow` | `string` | `row`, `column`, `row-dense`, `column-dense` |
+| `gridTemplateRows` | `string` | CSS track list, e.g. `"48px 1fr"`, `"repeat(2, 100px)"`, `"minmax(80px, 1fr)"` |
+| `gridTemplateColumns` | `string` | same form as rows |
+| `gridAutoRows` | `string` | track sizes, e.g. `"auto 100px"` |
+| `gridAutoColumns` | `string` | same form as auto rows |
+| `gridTemplateAreas` | `string` | `"hd hd" "main side"` or `hd hd / main side` |
+| `gridTemplateRowNames` | `stringlist` | one entry per track, e.g. `["start end", "line1"]` |
+| `gridTemplateColumnNames` | `stringlist` | same as row names |
+| `boxSizing` | `string` | `border-box`, `content-box` |
+| `overflowX` / `overflowY` | `string` | `visible`, `clip`, `hidden`, `scroll` |
+| `scrollbarWidth` | `real` | px |
+| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | px |
+| `direction` | `string` | `ltr`, `rtl` |
+| `taffyStyle` | `var` (`QVariantMap`) | read-only debug snapshot |
+
+### TaffyLayout.<var> attached (item)
+
+Set on **children** of `TaffyLayout`. Notify via `itemStyleChanged`.
+
+| Property | QML type | Values / notes |
+|---|---|---|
+| `width` / `height` | `string` | length: `"100"`, `"100px"`, `"50%"`, `"auto"`, `"min-content"`, `"max-content"` |
+| `minWidth` / `minHeight` | `string` | length (same syntax) |
+| `maxWidth` / `maxHeight` | `string` | length |
+| `aspectRatio` | `real` | width/height ratio; `NaN` = unset |
+| `flexBasis` | `string` | length: `"0"`, `"0%"`, `"auto"`, `"100px"` |
+| `flexGrow` | `real` | default `0` |
+| `flexShrink` | `real` | default `1` |
+| `alignSelf` | `string` | empty/`auto` = unset; else `normal`, `start`, `center`, `stretch`, … (same as `alignItems`) |
+| `justifySelf` | `string` | empty/`auto` = unset; same keywords as `alignSelf` |
+| `marginTop` / `Right` / `Bottom` / `Left` | `real` | px |
+| `paddingTop` / `Right` / `Bottom` / `Left` | `real` | px |
+| `borderTop` / `Right` / `Bottom` / `Left` | `real` | px |
+| `position` | `string` | `static`, `relative`, `absolute`, `fixed`, `sticky` |
+| `insetTop` / `Right` / `Bottom` / `Left` | `string` | length: `"auto"`, `"8px"`, `"10%"` |
+| `gridRow` | `string` | `"auto"`, `"2"`, `"span 2"`, `"1 / 3"` |
+| `gridColumn` | `string` | same form as `gridRow` |
+| `boxSizing` | `string` | `border-box`, `content-box` |
+| `overflowX` / `overflowY` | `string` | `visible`, `clip`, `hidden`, `scroll` |
+| `cssFloat` | `string` | `none`, `left`, `right` |
+| `clear` | `string` | `none`, `left`, `right`, `both` |
+| `textAlign` | `string` | `auto`, `left`, `right`, `center` (and `legacy-left` etc.) |
+| `itemIsTable` | `bool` | default `false` |
+| `itemIsReplaced` | `bool` | default `false` |
+| `itemIsCompressibleReplaced` | `bool` | default `false` |
+| `taffyStyle` | `var` (`QVariantMap`) | read-only debug snapshot |
+
+### Length syntax
+
+| Example | Meaning |
+|---|---|
+| `"100"` / `"100px"` | 100 pixels (bare number = px) |
+| `"50%"` | percentage |
+| `"auto"` / unset | automatic (stretch / flex may expand) |
+| `"min-content"` / `"max-content"` | intrinsic keyword |
+| `"1fr"` / `"repeat(2, 100px)"` | grid tracks only |
+
+### Debug
+
+```qml
+layout.dump()                      // container property dump (string)
+layout.taffyStyle                  // QVariantMap
+item.TaffyLayout.dump()            // attached property dump
+layout.dumpTree()                  // container + all children
 ```
-
-When width/height are omitted, behavior matches CSS: `auto`, and may be expanded by `stretch` / `flex-grow`.
 
 ## Architecture
 
@@ -161,16 +221,6 @@ taffy::registerQmlTypes();
 | Dependency | in Qt | Rust taffy + cxx |
 
 Layout timing (`invalidate` → polish → rearrange) follows the `QQuickLayout` family, with extra hardening for invalid sizes and nested layouts.
-
-## Debugging
-
-```qml
-Component.onCompleted: {
-    console.log(layout.dump())                 // container properties
-    console.log(JSON.stringify(item.TaffyLayout.taffyStyle))
-    console.log(layout.dumpTree())             // container + all children attached
-}
-```
 
 ## License
 
