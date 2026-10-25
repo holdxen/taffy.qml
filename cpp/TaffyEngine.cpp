@@ -83,6 +83,8 @@ namespace {
     o.grid_row.end = s.gridRow.end;
     o.grid_column.start = s.gridColumn.start;
     o.grid_column.end = s.gridColumn.end;
+    o.measure_width = s.measureWidth;
+    o.measure_height = s.measureHeight;
     return o;
 }
 

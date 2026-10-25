@@ -156,6 +156,9 @@ struct Style
     std::vector<std::string> gridTemplateColumnNames;
     LinePlacement gridRow;
     LinePlacement gridColumn;
+    /** Qt content size (preferred/implicit). 0 = unknown; used as leaf measure. */
+    double measureWidth = 0.0;
+    double measureHeight = 0.0;
 };
 
 class Engine

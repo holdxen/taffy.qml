@@ -479,6 +479,11 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     QQuickLayout::effectiveSizeHints_helper(child, hints, &layoutInfo, true);
     const QSizeF pref = hints[Qt::PreferredSize];
 
+    // Content size for taffy leaf measure (Qt FlexboxLayout does this via Yoga).
+    // Cross-axis auto + align-items:center/start/end shrinks to this instead of 0.
+    s.measureWidth = pref.width();
+    s.measureHeight = pref.height();
+
     auto toLen = [](qreal v) -> std::string {
         if (v <= 0)
             return "auto";

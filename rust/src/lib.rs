@@ -2,6 +2,7 @@
 
 use std::str::FromStr;
 
+use taffy::compute::compute_leaf_layout;
 use taffy::geometry::{Line, Point as TPoint, Rect as TRect, Size as TSize};
 use taffy::prelude::{
     AlignContent, AlignItems, AvailableSpace as TAvailableSpace, BoxSizing, Dimension, Display,
@@ -9,7 +10,7 @@ use taffy::prelude::{
 };
 use taffy::style::{Clear, Direction, Float, GridAutoFlow, Overflow, TextAlign};
 use taffy::style_helpers::{length, percent};
-use taffy::tree::TaffyError;
+use taffy::tree::{LayoutInput, LayoutOutput, TaffyError};
 use taffy::TaffyTree;
 use taffy::{
     GridPlacement, GridTemplateComponent, TrackSizingFunction,
@@ -128,6 +129,11 @@ pub mod ffi {
         grid_template_column_names: Vec<String>,
         grid_row: LinePlacement,
         grid_column: LinePlacement,
+        /// Content size from Qt size hints (implicit/preferred). 0 = unknown.
+        /// Used as leaf measure so align-items: center shrinks to content
+        /// instead of collapsing to 0.
+        measure_width: f64,
+        measure_height: f64,
     }
 
     extern "Rust" {
@@ -571,8 +577,26 @@ fn to_taffy_style(s: &ffi::NodeStyle) -> Style {
 }
 
 pub struct TaffyEngine {
-    tree: TaffyTree,
+    tree: TaffyTree<TSize<f32>>,
     nodes: Vec<NodeId>,
+}
+
+/// Leaf measure: report the Qt content size stored on the node.
+/// Lets `align-items: center/start/end` size to content instead of 0.
+fn content_size_measure(
+    inputs: LayoutInput,
+    _node_id: NodeId,
+    node_context: Option<&mut TSize<f32>>,
+    style: &Style,
+) -> LayoutOutput {
+    compute_leaf_layout(
+        inputs,
+        style,
+        |_, _| 0.0,
+        |known_dimensions, _available_space| {
+            known_dimensions.unwrap_or(node_context.cloned().unwrap_or(TSize::ZERO))
+        },
+    )
 }
 
 fn engine_new() -> Box<TaffyEngine> {
@@ -591,7 +615,16 @@ impl TaffyEngine {
     }
 
     fn engine_add_node(&mut self, style: &ffi::NodeStyle) -> u32 {
-        let node = self.tree.new_leaf(to_taffy_style(style)).expect("new_leaf");
+        let tstyle = to_taffy_style(style);
+        let content = TSize {
+            width: style.measure_width as f32,
+            height: style.measure_height as f32,
+        };
+        let node = if content.width > 0.0 || content.height > 0.0 {
+            self.tree.new_leaf_with_context(tstyle, content).expect("new_leaf")
+        } else {
+            self.tree.new_leaf(tstyle).expect("new_leaf")
+        };
         self.nodes.push(node);
         (self.nodes.len() - 1) as u32
     }
@@ -620,7 +653,9 @@ impl TaffyEngine {
             width: avail(width),
             height: avail(height),
         };
-        self.tree.compute_layout(root, size).map_err(taffy_err)
+        self.tree
+            .compute_layout_with_measure(root, size, content_size_measure)
+            .map_err(taffy_err)
     }
 
     fn engine_layout(&self, node: u32) -> Result<ffi::Layout, String> {
@@ -773,5 +808,92 @@ mod tests {
         let l = tree.layout(inner).unwrap();
         println!("inner2 layout {}x{}", l.size.width, l.size.height);
         assert!(l.size.height > 100.0, "expected grow, got {}", l.size.height);
+    }
+
+    /// align-items: center + cross-axis auto must shrink to content size,
+    /// not collapse to 0 (the Button-text-disappears bug).
+    #[test]
+    fn align_center_keeps_content_size() {
+        let mut tree: TaffyTree<Size<f32>> = TaffyTree::new();
+        let root = tree
+            .new_leaf(Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::CENTER,
+                size: Size {
+                    width: length(400.0),
+                    height: length(300.0),
+                },
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        // Leaf: width auto (cross), height fixed. Content size 80x20 (e.g. Button).
+        let child = tree
+            .new_leaf_with_context(
+                Style {
+                    size: Size {
+                        width: Dimension::auto(),
+                        height: length(20.0),
+                    },
+                    ..Style::DEFAULT
+                },
+                Size { width: 80.0, height: 20.0 },
+            )
+            .unwrap();
+        tree.add_child(root, child).unwrap();
+        tree.compute_layout_with_measure(
+            root,
+            Size {
+                width: AvailableSpace::Definite(400.0),
+                height: AvailableSpace::Definite(300.0),
+            },
+            content_size_measure,
+        )
+        .unwrap();
+        let l = tree.layout(child).unwrap();
+        assert!((l.size.width - 80.0).abs() < 0.1, "width should be content 80, got {}", l.size.width);
+        assert!((l.size.height - 20.0).abs() < 0.1, "height should be 20, got {}", l.size.height);
+    }
+
+    /// Same leaf with align-items: stretch must fill the container cross axis.
+    #[test]
+    fn align_stretch_fills_cross_axis() {
+        let mut tree: TaffyTree<Size<f32>> = TaffyTree::new();
+        let root = tree
+            .new_leaf(Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::STRETCH,
+                size: Size {
+                    width: length(400.0),
+                    height: length(300.0),
+                },
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        let child = tree
+            .new_leaf_with_context(
+                Style {
+                    size: Size {
+                        width: Dimension::auto(),
+                        height: length(20.0),
+                    },
+                    ..Style::DEFAULT
+                },
+                Size { width: 80.0, height: 20.0 },
+            )
+            .unwrap();
+        tree.add_child(root, child).unwrap();
+        tree.compute_layout_with_measure(
+            root,
+            Size {
+                width: AvailableSpace::Definite(400.0),
+                height: AvailableSpace::Definite(300.0),
+            },
+            content_size_measure,
+        )
+        .unwrap();
+        let l = tree.layout(child).unwrap();
+        assert!((l.size.width - 400.0).abs() < 0.1, "stretch width should be 400, got {}", l.size.width);
     }
 }
