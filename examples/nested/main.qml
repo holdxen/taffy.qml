@@ -27,7 +27,7 @@ ApplicationWindow {
             display: "flex"
             flexDirection: "column"
             gapHeight: 10
-            alignItems: 'center'
+            alignItems: 'flex-end'
             TaffyLayout.flexGrow: 1
             TaffyLayout.flexShrink: 1
             TaffyLayout.flexBasis: "0%"

@@ -142,8 +142,9 @@ private:
     /** Sync implicitWidth/Height (and Layout min/max) like QQuickLayout::applySizeHints. */
     void applySizeHintsToItem();
     void onItemStyleChanged();
+    void onChildImplicitSizeChanged();
     static void checkItemAnchors(QQuickItem* item);
-    static void applyChildGeometry(QQuickItem* child, const taffy::Layout& layout);
+    void applyChildGeometry(QQuickItem* child, const taffy::Layout& layout);
 
     QString m_display = QStringLiteral("flex");
     QString m_flexDirection = QStringLiteral("row");

@@ -88,18 +88,32 @@ void TaffyLayout::watchItemStyle(QQuickItem* child) const
     if (!child) {
         return;
     }
+    auto* self = const_cast<TaffyLayout*>(this);
+    // Controls (Button, etc.) can update implicit size after the first polish
+    // (9→20→42→57). If we already positioned against a stale snapshot, flex-end
+    // overflows the container until the next external rearrange. Re-layout here.
+    QObject::connect(child, &QQuickItem::implicitWidthChanged,
+                     self, &TaffyLayout::onChildImplicitSizeChanged,
+                     Qt::UniqueConnection);
+    QObject::connect(child, &QQuickItem::implicitHeightChanged,
+                     self, &TaffyLayout::onChildImplicitSizeChanged,
+                     Qt::UniqueConnection);
     auto* attached = qobject_cast<TaffyLayoutAttached*>(
         qmlAttachedPropertiesObject<TaffyLayout>(child, false));
     if (!attached) {
         return;
     }
-    auto* self = const_cast<TaffyLayout*>(this);
     QObject::connect(attached, &TaffyLayoutAttached::itemStyleChanged,
                      self, &TaffyLayout::onItemStyleChanged,
                      Qt::UniqueConnection);
 }
 
 void TaffyLayout::onItemStyleChanged()
+{
+    invalidate();
+}
+
+void TaffyLayout::onChildImplicitSizeChanged()
 {
     invalidate();
 }
@@ -590,6 +604,11 @@ void TaffyLayout::invalidate(QQuickItem* childItem)
 {
     m_sizeHintsDirty = true;
     QQuickLayout::invalidate(childItem);
+    // QQuickLayout::invalidate() no-ops when m_dirty is already set. That bit
+    // starts out true and stays true if we only rearrange via geometryChange /
+    // applyChildGeometry (both call rearrange() directly). A later child implicit
+    // size change would then be swallowed. Always request a polish.
+    polish();
 }
 
 void TaffyLayout::applySizeHintsToItem()
@@ -717,6 +736,13 @@ void TaffyLayout::applyChildGeometry(QQuickItem* child, const taffy::Layout& l)
         if (auto* layout = qobject_cast<QQuickLayout*>(child)) {
             layout->rearrange(newSize);
         }
+    }
+
+    // The item may clamp/expand to its own content (e.g. Button implicit size
+    // settles after polish). Positions computed for the taffy size are then wrong.
+    if (!qFuzzyCompare(child->width(), newSize.width())
+        || !qFuzzyCompare(child->height(), newSize.height())) {
+        invalidate();
     }
 }
 
