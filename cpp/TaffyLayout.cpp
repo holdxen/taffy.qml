@@ -486,8 +486,16 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     };
 
     if (!attached) {
-        s.size.width = toLen(pref.width());
-        s.size.height = toLen(pref.height());
+        // No attached flex props: use content size on the main axis, stretch on cross.
+        const bool rowMain = (m_flexDirection == QLatin1String("row")
+                              || m_flexDirection == QLatin1String("row-reverse"));
+        if (rowMain) {
+            s.size.width = toLen(pref.width());
+            s.size.height = "auto";
+        } else {
+            s.size.height = toLen(pref.height());
+            s.size.width = "auto";
+        }
         return s;
     }
 
@@ -495,18 +503,29 @@ taffy::Style TaffyLayout::itemStyle(QQuickItem* child) const
     const QString h = attached->height();
     const bool wAuto = (w == QLatin1String("auto") || w.isEmpty());
     const bool hAuto = (h == QLatin1String("auto") || h.isEmpty());
-    s.size.width = wAuto ? toLen(pref.width()) : lengthCss(w);
-    s.size.height = hAuto ? toLen(pref.height()) : lengthCss(h);
 
-    // If Layout.* provided min/max hints and user did not override, use them.
-    if (attached->minWidth() == QLatin1String("auto") || attached->minWidth().isEmpty())
-        s.minSize.width = toLen(hints[Qt::MinimumSize].width());
-    if (attached->minHeight() == QLatin1String("auto") || attached->minHeight().isEmpty())
-        s.minSize.height = toLen(hints[Qt::MinimumSize].height());
-    if (attached->maxWidth() == QLatin1String("auto") || attached->maxWidth().isEmpty())
-        s.maxSize.width = toLen(hints[Qt::MaximumSize].width());
-    if (attached->maxHeight() == QLatin1String("auto") || attached->maxHeight().isEmpty())
-        s.maxSize.height = toLen(hints[Qt::MaximumSize].height());
+    // CSS flex: flex-basis applies to the main axis and overrides width/height
+    // for the flex base size. Cross-axis "auto" allows align-items: stretch.
+    // Only bake in content size on the main axis when flex-basis is auto.
+    const QString basis = attached->flexBasis();
+    const bool basisAuto = basis.isEmpty() || basis == QLatin1String("auto");
+    const bool rowMain = (m_flexDirection == QLatin1String("row")
+                          || m_flexDirection == QLatin1String("row-reverse"));
+
+    // Main axis: flex-basis (or content when basis is auto). Cross axis: auto (stretch).
+    const std::string basisCss = lengthCss(basis);
+    if (rowMain) {
+        s.size.width = wAuto ? (basisAuto ? toLen(pref.width()) : basisCss)
+                             : lengthCss(w);
+        s.size.height = hAuto ? std::string("auto") : lengthCss(h);
+    } else {
+        s.size.height = hAuto ? (basisAuto ? toLen(pref.height()) : basisCss)
+                              : lengthCss(h);
+        s.size.width = wAuto ? std::string("auto") : lengthCss(w);
+    }
+
+    // Only apply helper min hints. Do NOT copy MaximumSize here:
+    // QQuickLayout max hints are content estimates and would clamp flex-grow.
 
     // Explicit TaffyLayout min/max override the Layout.* hints above.
     if (!(attached->minWidth() == QLatin1String("auto") || attached->minWidth().isEmpty()))

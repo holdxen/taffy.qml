@@ -176,7 +176,7 @@ TaffyLayout::rearrange → setX/Y/Width/Height
 |---|---|
 | `include/taffy/`, `cpp/` | Qt/QML API, `QQuickLayout`, attached properties, debug dump |
 | `rust/` | Pure **cxx** (no Qt), engine + CSS-string style |
-| `examples/` | minimal / dump / grid |
+| `examples/` | minimal / dump / grid / nested / nested |
 
 Requirements: CMake ≥ 3.24, **Qt 6** (Qt 5 is not supported), Rust toolchain (to build `rust/`).
 
@@ -189,6 +189,7 @@ cmake --build build
 ./build/examples/minimal/taffy_example_minimal
 ./build/examples/grid/taffy_example_grid
 ./build/examples/dump/taffy_example_dump
+./build/examples/nested/taffy_example_nested
 ```
 
 ## Use as a dependency (FetchContent)

@@ -670,3 +670,108 @@ impl TaffyEngine {
 fn taffy_err(e: TaffyError) -> String {
     e.to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use taffy::prelude::*;
+    use taffy::TaffyTree;
+
+    #[test]
+    fn column_grow_with_basis_zero() {
+        let mut tree: TaffyTree<()> = TaffyTree::new();
+        let root = tree
+            .new_leaf(Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                size: Size {
+                    width: length(460.0),
+                    height: length(340.0),
+                },
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        let bar = tree
+            .new_leaf(Style {
+                size: Size {
+                    width: Dimension::auto(),
+                    height: length(100.0),
+                },
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        let inner = tree
+            .new_leaf(Style {
+                size: Size {
+                    width: Dimension::auto(),
+                    height: length(0.0),
+                },
+                flex_basis: length(0.0),
+                flex_grow: 1.0,
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        tree.add_child(root, bar).unwrap();
+        tree.add_child(root, inner).unwrap();
+        tree.compute_layout(
+            root,
+            Size {
+                width: AvailableSpace::Definite(460.0),
+                height: AvailableSpace::Definite(340.0),
+            },
+        )
+        .unwrap();
+        let l = tree.layout(inner).unwrap();
+        println!("inner layout {}x{} at {},{}", l.size.width, l.size.height, l.location.x, l.location.y);
+        assert!(l.size.height > 100.0, "expected grow, got {}", l.size.height);
+    }
+
+    #[test]
+    fn column_grow_with_size_auto_basis_pct() {
+        let mut tree: TaffyTree<()> = TaffyTree::new();
+        let root = tree
+            .new_leaf(Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                size: Size {
+                    width: length(460.0),
+                    height: length(340.0),
+                },
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        let bar = tree
+            .new_leaf(Style {
+                size: Size {
+                    width: Dimension::auto(),
+                    height: length(100.0),
+                },
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        let inner = tree
+            .new_leaf(Style {
+                size: Size {
+                    width: Dimension::auto(),
+                    height: Dimension::auto(),
+                },
+                flex_basis: percent(0.0),
+                flex_grow: 1.0,
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        tree.add_child(root, bar).unwrap();
+        tree.add_child(root, inner).unwrap();
+        tree.compute_layout(
+            root,
+            Size {
+                width: AvailableSpace::Definite(460.0),
+                height: AvailableSpace::Definite(340.0),
+            },
+        )
+        .unwrap();
+        let l = tree.layout(inner).unwrap();
+        println!("inner2 layout {}x{}", l.size.width, l.size.height);
+        assert!(l.size.height > 100.0, "expected grow, got {}", l.size.height);
+    }
+}
