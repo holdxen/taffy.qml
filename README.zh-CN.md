@@ -226,4 +226,4 @@ taffy::registerQmlTypes();
 
 ## 许可
 
-MIT OR Apache-2.0
+MIT

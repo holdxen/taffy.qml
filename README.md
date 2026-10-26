@@ -225,4 +225,4 @@ Layout timing (`invalidate` → polish → rearrange) follows the `QQuickLayout`
 
 ## License
 
-MIT OR Apache-2.0
+MIT
