@@ -57,10 +57,19 @@ corrosion_import_crate(
     LOCKED
 )
 
+# Glue is compiled by corrosion_add_cxxbridge below; tell build.rs not to
+# emit a second copy into the rust staticlib (duplicate cxx symbols).
+corrosion_set_env_vars(taffy_rust "TAFFY_CXX_FROM_CMAKE=1")
+
 if(COMMAND corrosion_add_cxxbridge)
     corrosion_add_cxxbridge(taffy_cxxbridge
         CRATE taffy_rust
         FILES lib.rs
+    )
+    # Keep cxx glue symbols out of the public ABI as much as the toolchain allows.
+    set_target_properties(taffy_cxxbridge PROPERTIES
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
     )
 endif()
 
@@ -78,6 +87,12 @@ add_library(taffy
     include/taffy/TaffyLayoutAttached.h
 )
 add_library(taffy::taffy ALIAS taffy)
+
+# Hide implementation symbols (cxx glue, engine facade details).
+set_target_properties(taffy PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+)
 
 target_include_directories(taffy
     PUBLIC

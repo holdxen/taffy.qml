@@ -16,7 +16,7 @@ use taffy::{
     GridPlacement, GridTemplateComponent, TrackSizingFunction,
 };
 
-#[cxx::bridge]
+#[cxx::bridge(namespace = "taffy::qml")]
 pub mod ffi {
     struct Point {
         x: f64,

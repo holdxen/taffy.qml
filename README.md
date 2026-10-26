@@ -223,6 +223,17 @@ taffy::registerQmlTypes();
 
 Layout timing (`invalidate` → polish → rearrange) follows the `QQuickLayout` family, with extra hardening for invalid sizes and nested layouts.
 
+## Using with your own cxx / Rust code
+
+This library privately uses [cxx](https://cxx.rs). To avoid link clashes with an application that also uses cxx:
+
+- The bridge is generated in namespace **`taffy::qml`** (not the default crate namespace).
+- Public headers never expose `cxx` types (`taffy::Engine` is an opaque facade).
+- The C++ glue is compiled **once** (via `corrosion_add_cxxbridge`); `build.rs` skips `cxx_build` when CMake builds the crate (`TAFFY_CXX_FROM_CMAKE`).
+- Targets use hidden visibility where the toolchain supports it.
+
+If you still see duplicate `rust::cxxbridge1::*` symbols, prefer linking `taffy` as a shared library, or hide our archives at final link (e.g. GNU ld `--exclude-libs`).
+
 ## License
 
 MIT

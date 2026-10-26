@@ -5,13 +5,15 @@
 // cxx-generated glue (global namespace types)
 #include <taffy_cxxbridge/lib.h>
 
+namespace tq = ::taffy::qml;
+
 namespace taffy {
 
 namespace {
 
-::LengthRect toFfi(const LengthRect& r)
+tq::LengthRect toFfi(const LengthRect& r)
 {
-    ::LengthRect o;
+    tq::LengthRect o;
     o.left = r.left;
     o.right = r.right;
     o.top = r.top;
@@ -19,17 +21,17 @@ namespace {
     return o;
 }
 
-::LengthSize toFfi(const LengthSize& s)
+tq::LengthSize toFfi(const LengthSize& s)
 {
-    ::LengthSize o;
+    tq::LengthSize o;
     o.width = s.width;
     o.height = s.height;
     return o;
 }
 
-::NodeStyle toFfi(const Style& s)
+tq::NodeStyle toFfi(const Style& s)
 {
-    ::NodeStyle o;
+    tq::NodeStyle o;
     o.display = s.display;
     o.item_is_table = s.itemIsTable;
     o.item_is_replaced = s.itemIsReplaced;
@@ -93,7 +95,7 @@ namespace {
 class EngineImpl
 {
 public:
-    rust::Box<::TaffyEngine> engine = ::engine_new();
+    rust::Box<tq::TaffyEngine> engine = tq::engine_new();
 };
 
 Engine::Engine()
@@ -135,9 +137,9 @@ bool Engine::setStyle(std::uint32_t node, const Style& style)
 
 bool Engine::compute(const AvailableSpace& width, const AvailableSpace& height)
 {
-    ::AvailableSpace w;
+    tq::AvailableSpace w;
     w.css = width.css;
-    ::AvailableSpace h;
+    tq::AvailableSpace h;
     h.css = height.css;
     try {
         d->engine->engine_compute(w, h);
@@ -156,7 +158,7 @@ bool Engine::compute(double availableWidth, double availableHeight)
 bool Engine::layout(std::uint32_t node, Layout& out) const
 {
     try {
-        const ::Layout l = d->engine->engine_layout(node);
+        const tq::Layout l = d->engine->engine_layout(node);
         out.order = l.order;
         out.location.x = l.location.x;
         out.location.y = l.location.y;

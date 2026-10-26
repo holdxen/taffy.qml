@@ -224,6 +224,17 @@ taffy::registerQmlTypes();
 
 布局时机（`invalidate` → polish → rearrange）与 `QQuickLayout` 族一致，并对非法尺寸、嵌套 layout 等做了加固。
 
+## 与自己的 cxx / Rust 代码共存
+
+本库内部使用 [cxx](https://cxx.rs)，若你的工程也用 cxx，注意：
+
+- Bridge 生成在独立命名空间 **`taffy::qml`**，避免与默认命名空间撞车。
+- 公共头不暴露任何 `cxx` 类型（`taffy::Engine` 为不透明门面）。
+- C++ glue **只编译一份**（`corrosion_add_cxxbridge`）；CMake 构建时 `build.rs` 会跳过 `cxx_build`（环境变量 `TAFFY_CXX_FROM_CMAKE`）。
+- 目标开启 hidden visibility（工具链支持时）。
+
+若仍出现 `rust::cxxbridge1::*` 重复符号，可优先把 `taffy` 编成动态库，或在最终链接时忽略本库归档中的符号（如 GNU ld 的 `--exclude-libs`）。
+
 ## 许可
 
 MIT
