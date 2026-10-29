@@ -220,20 +220,15 @@ taffy::registerQmlTypes();
 | 样式 API | 枚举 + qreal | **CSS 字符串** |
 | Grid | 无 | 完整模板 / area / span |
 | 附加属性 | 基本只有 `alignSelf` | 完整子项样式 |
-| 依赖 | Qt 内置 | Rust taffy + cxx |
+| 依赖 | Qt 内置 | Rust taffy (C ABI) |
 
 布局时机（`invalidate` → polish → rearrange）与 `QQuickLayout` 族一致，并对非法尺寸、嵌套 layout 等做了加固。
 
-## 与自己的 cxx / Rust 代码共存
+## FFI / 与其他 Rust crate 共存
 
-本库内部使用 [cxx](https://cxx.rs)，若你的工程也用 cxx，注意：
+Rust 侧只导出**纯 C ABI**（`taffy_*`，见 `include/taffy/TaffyC.h`），**不再依赖 cxx**，因此与你自己的 cxx 工程链接时不会出现 `rust::cxxbridge1` 符号冲突。
 
-- Bridge 生成在独立命名空间 **`taffy::qml`**，避免与默认命名空间撞车。
-- 公共头不暴露任何 `cxx` 类型（`taffy::Engine` 为不透明门面）。
-- C++ glue **只编译一份**（`corrosion_add_cxxbridge`）；CMake 构建时 `build.rs` 会跳过 `cxx_build`（环境变量 `TAFFY_CXX_FROM_CMAKE`）。
-- 目标开启 hidden visibility（工具链支持时）。
-
-若仍出现 `rust::cxxbridge1::*` 重复符号，可优先把 `taffy` 编成动态库，或在最终链接时忽略本库归档中的符号（如 GNU ld 的 `--exclude-libs`）。
+对外 C++ API 仍是 `taffy::Engine`（不透明门面）。C 符号统一前缀 `taffy_`。
 
 ## 许可
 

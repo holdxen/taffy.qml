@@ -1,8 +1,11 @@
-//! Pure cxx bridge. Style values are CSS-like strings (parsed by taffy).
+//! taffy layout engine exposed through a plain C ABI (no cxx).
+//! All public entry points are `taffy_*` `extern "C"` so they cannot clash
+//! with another crate's cxx-generated symbols.
 
+use std::ffi::{c_char, CStr};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::str::FromStr;
 
-use taffy::compute::compute_leaf_layout;
 use taffy::geometry::{Line, Point as TPoint, Rect as TRect, Size as TSize};
 use taffy::prelude::{
     AlignContent, AlignItems, AvailableSpace as TAvailableSpace, BoxSizing, Dimension, Display,
@@ -10,178 +13,162 @@ use taffy::prelude::{
 };
 use taffy::style::{Clear, Direction, Float, GridAutoFlow, Overflow, TextAlign};
 use taffy::style_helpers::{length, percent};
-use taffy::tree::{LayoutInput, LayoutOutput, TaffyError};
+use taffy::tree::TaffyError;
 use taffy::TaffyTree;
-use taffy::{
-    GridPlacement, GridTemplateComponent, TrackSizingFunction,
-};
+use taffy::{GridPlacement, GridTemplateArea, GridTemplateAreas, GridTemplateComponent, TrackSizingFunction};
 
-#[cxx::bridge(namespace = "taffy::qml")]
-pub mod ffi {
-    struct Point {
-        x: f64,
-        y: f64,
-    }
+// ---------------------------------------------------------------------------
+// C ABI types
+// ---------------------------------------------------------------------------
 
-    struct Size {
-        width: f64,
-        height: f64,
-    }
-
-    struct Rect {
-        left: f64,
-        right: f64,
-        top: f64,
-        bottom: f64,
-    }
-
-    struct AvailableSpace {
-        /// "100px" | "min-content" | "max-content"
-        css: String,
-    }
-
-    /// CSS-like length: "auto" | "100px" | "50%" | "min-content" | "max-content" | "0"
-    struct LengthValue {
-        css: String,
-    }
-
-    struct LengthSize {
-        width: String,
-        height: String,
-    }
-
-    struct LengthRect {
-        left: String,
-        right: String,
-        top: String,
-        bottom: String,
-    }
-
-    struct Placement {
-        /// "auto" | "1" | "span 2"
-        css: String,
-    }
-
-    struct LinePlacement {
-        start: String,
-        end: String,
-    }
-
-
-    struct Layout {
-        order: u32,
-        location: Point,
-        size: Size,
-        border: Rect,
-        padding: Rect,
-        margin: Rect,
-        scrollbar_size: Size,
-    }
-
-    /// Full style surface; keyword / dimension fields are CSS strings.
-    struct NodeStyle {
-        display: String,
-        item_is_table: bool,
-        item_is_replaced: bool,
-        item_is_compressible_replaced: bool,
-        box_sizing: String,
-        direction: String,
-        overflow_x: String,
-        overflow_y: String,
-        scrollbar_width: f64,
-        contain: u32,
-        css_float: String,
-        clear: String,
-        position: String,
-        inset: LengthRect,
-        size: LengthSize,
-        min_size: LengthSize,
-        max_size: LengthSize,
-        aspect_ratio: f64,
-        margin: LengthRect,
-        padding: LengthRect,
-        border: LengthRect,
-        align_items: String,
-        align_self: String,
-        justify_items: String,
-        justify_self: String,
-        align_content: String,
-        justify_content: String,
-        gap: LengthSize,
-        text_align: String,
-        flex_direction: String,
-        flex_wrap: String,
-        flex_line_count: u32,
-        flex_basis: String,
-        flex_grow: f64,
-        flex_shrink: f64,
-        grid_auto_flow: String,
-        // CSS track lists: "100px 1fr" | "repeat(2, minmax(100px, 1fr))"
-        grid_template_rows: String,
-        grid_template_columns: String,
-        // CSS track sizing lists: "auto 100px" (no repeat)
-        grid_auto_rows: String,
-        grid_auto_columns: String,
-        // CSS: "\"header header\" \"main sidebar\"" or header header / main sidebar
-        grid_template_areas: String,
-        // one entry per track: "start end" | "" | "line1"
-        grid_template_row_names: Vec<String>,
-        grid_template_column_names: Vec<String>,
-        grid_row: LinePlacement,
-        grid_column: LinePlacement,
-        /// Content size from Qt size hints (implicit/preferred). 0 = unknown.
-        /// Used as leaf measure so align-items: center shrinks to content
-        /// instead of collapsing to 0.
-        measure_width: f64,
-        measure_height: f64,
-    }
-
-    extern "Rust" {
-        type TaffyEngine;
-
-        fn engine_new() -> Box<TaffyEngine>;
-        fn engine_add_node(self: &mut TaffyEngine, style: &NodeStyle) -> u32;
-        fn engine_add_child(self: &mut TaffyEngine, parent: u32, child: u32) -> Result<()>;
-        fn engine_set_style(self: &mut TaffyEngine, node: u32, style: &NodeStyle) -> Result<()>;
-        fn engine_compute(
-            self: &mut TaffyEngine,
-            width: &AvailableSpace,
-            height: &AvailableSpace,
-        ) -> Result<()>;
-        fn engine_layout(self: &TaffyEngine, node: u32) -> Result<Layout>;
-        fn engine_clear(self: &mut TaffyEngine);
-    }
+#[repr(C)]
+pub struct TaffyCRect {
+    pub left: f64,
+    pub right: f64,
+    pub top: f64,
+    pub bottom: f64,
 }
 
-fn parse_or<T: FromStr>(s: &str, fallback: T) -> T {
-    s.parse().unwrap_or(fallback)
+#[repr(C)]
+pub struct TaffyCSize {
+    pub width: f64,
+    pub height: f64,
 }
 
-fn parse_available_space(s: &str) -> TAvailableSpace {
-    let s = s.trim();
-    match s {
-        "min-content" => TAvailableSpace::MinContent,
-        "max-content" => TAvailableSpace::MaxContent,
-        _ => {
-            if let Some(v) = s.strip_suffix("px") {
-                if let Ok(v) = v.trim().parse::<f32>() {
-                    return TAvailableSpace::Definite(v);
-                }
-            }
-            if let Some(p) = s.strip_suffix('%') {
-                if let Ok(v) = p.trim().parse::<f32>() {
-                    // percent has no parent size at compute() — treat as 0
-                    let _ = v;
-                    return TAvailableSpace::Definite(0.0);
-                }
-            }
-            if let Ok(v) = s.parse::<f32>() {
-                return TAvailableSpace::Definite(v);
-            }
-            TAvailableSpace::MinContent
-        }
-    }
+#[repr(C)]
+pub struct TaffyCPoint {
+    pub x: f64,
+    pub y: f64,
 }
+
+#[repr(C)]
+pub struct TaffyCLayout {
+    pub order: u32,
+    pub location: TaffyCPoint,
+    pub size: TaffyCSize,
+    pub border: TaffyCRect,
+    pub padding: TaffyCRect,
+    pub margin: TaffyCRect,
+    pub scrollbar_size: TaffyCSize,
+}
+
+/// Two C strings: start / end placement ("" or NULL = "auto").
+#[repr(C)]
+pub struct TaffyCLine {
+    pub start: *const c_char,
+    pub end: *const c_char,
+}
+
+/// Track as two C strings: min / max CSS sizing functions.
+#[repr(C)]
+pub struct TaffyCTrack {
+    pub min: *const c_char,
+    pub max: *const c_char,
+}
+
+/// Full style; string fields are UTF-8 C strings (NULL = empty / auto).
+#[repr(C)]
+pub struct TaffyCStyle {
+    pub display: *const c_char,
+    pub item_is_table: bool,
+    pub item_is_replaced: bool,
+    pub item_is_compressible_replaced: bool,
+    pub box_sizing: *const c_char,
+    pub direction: *const c_char,
+    pub overflow_x: *const c_char,
+    pub overflow_y: *const c_char,
+    pub scrollbar_width: f64,
+    pub contain: u32,
+    pub css_float: *const c_char,
+    pub clear: *const c_char,
+    pub position: *const c_char,
+
+    pub inset_left: *const c_char,
+    pub inset_right: *const c_char,
+    pub inset_top: *const c_char,
+    pub inset_bottom: *const c_char,
+
+    pub size_width: *const c_char,
+    pub size_height: *const c_char,
+    pub min_size_width: *const c_char,
+    pub min_size_height: *const c_char,
+    pub max_size_width: *const c_char,
+    pub max_size_height: *const c_char,
+
+    pub aspect_ratio: f64,
+
+    pub margin_left: *const c_char,
+    pub margin_right: *const c_char,
+    pub margin_top: *const c_char,
+    pub margin_bottom: *const c_char,
+
+    pub padding_left: *const c_char,
+    pub padding_right: *const c_char,
+    pub padding_top: *const c_char,
+    pub padding_bottom: *const c_char,
+
+    pub border_left: *const c_char,
+    pub border_right: *const c_char,
+    pub border_top: *const c_char,
+    pub border_bottom: *const c_char,
+
+    pub align_items: *const c_char,
+    pub align_self: *const c_char,
+    pub justify_items: *const c_char,
+    pub justify_self: *const c_char,
+    pub align_content: *const c_char,
+    pub justify_content: *const c_char,
+
+    pub gap_width: *const c_char,
+    pub gap_height: *const c_char,
+
+    pub text_align: *const c_char,
+    pub flex_direction: *const c_char,
+    pub flex_wrap: *const c_char,
+    pub flex_line_count: u32,
+    pub flex_basis: *const c_char,
+    pub flex_grow: f64,
+    pub flex_shrink: f64,
+
+    pub grid_auto_flow: *const c_char,
+    pub grid_template_rows: *const c_char,
+    pub grid_template_columns: *const c_char,
+    pub grid_auto_rows: *const c_char,
+    pub grid_auto_columns: *const c_char,
+    pub grid_template_areas: *const c_char,
+
+    pub grid_template_row_names: *const *const c_char,
+    pub grid_template_row_names_len: usize,
+    pub grid_template_column_names: *const *const c_char,
+    pub grid_template_column_names_len: usize,
+
+    pub grid_row: TaffyCLine,
+    pub grid_column: TaffyCLine,
+
+    pub measure_width: f64,
+    pub measure_height: f64,
+}
+
+#[repr(C)]
+pub struct TaffyCAvailableSpace {
+    /// "100px" | "min-content" | "max-content"
+    pub css: *const c_char,
+}
+
+// ---------------------------------------------------------------------------
+// C helpers
+// ---------------------------------------------------------------------------
+
+unsafe fn cstr<'a>(p: *const c_char) -> &'a str {
+    if p.is_null() {
+        return "";
+    }
+    CStr::from_ptr(p).to_str().unwrap_or("")
+}
+
+// ---------------------------------------------------------------------------
+// CSS mapping (same rules as before)
+// ---------------------------------------------------------------------------
 
 fn parse_dim(s: &str) -> Dimension {
     let s = s.trim();
@@ -191,7 +178,6 @@ fn parse_dim(s: &str) -> Dimension {
     if let Ok(d) = Dimension::from_str(s) {
         return d;
     }
-    // Bare number → px (e.g. "100")
     if let Ok(v) = s.parse::<f32>() {
         return Dimension::length(v);
     }
@@ -199,7 +185,6 @@ fn parse_dim(s: &str) -> Dimension {
 }
 
 fn parse_lp(s: &str) -> LengthPercentage {
-    // taffy FromStr for LengthPercentage may not exist; map manually.
     let s = s.trim();
     if let Some(p) = s.strip_suffix('%') {
         if let Ok(v) = p.trim().parse::<f32>() {
@@ -212,10 +197,6 @@ fn parse_lp(s: &str) -> LengthPercentage {
         }
     }
     if let Ok(v) = s.parse::<f32>() {
-        return length(v);
-    }
-    // "100" style
-    if let Ok(v) = s.trim().parse::<f32>() {
         return length(v);
     }
     length(0.0)
@@ -258,25 +239,50 @@ fn parse_placement(s: &str) -> GridPlacement {
     GridPlacement::Auto
 }
 
-fn parse_line(start: &str, end: &str) -> Line<GridPlacement> {
-    Line {
-        start: parse_placement(start),
-        end: parse_placement(end),
+fn parse_available_space(s: &str) -> TAvailableSpace {
+    let s = s.trim();
+    match s {
+        "min-content" => TAvailableSpace::MinContent,
+        "max-content" => TAvailableSpace::MaxContent,
+        _ => {
+            if let Some(v) = s.strip_suffix("px") {
+                if let Ok(v) = v.trim().parse::<f32>() {
+                    return TAvailableSpace::Definite(v);
+                }
+            }
+            if let Ok(v) = s.parse::<f32>() {
+                return TAvailableSpace::Definite(v);
+            }
+            TAvailableSpace::MinContent
+        }
     }
 }
 
+fn parse_align_items(s: &str) -> AlignItems {
+    AlignItems::from_str(s).unwrap_or(AlignItems::NORMAL)
+}
 
-/// Parse a CSS track list into GridTemplateComponent items.
+fn parse_align_content(s: &str) -> AlignContent {
+    AlignContent::from_str(s).unwrap_or(AlignContent::NORMAL)
+}
+
+fn parse_optional_align(s: &str) -> Option<AlignItems> {
+    let s = s.trim();
+    if s.is_empty() || s == "auto" {
+        None
+    } else {
+        Some(parse_align_items(s))
+    }
+}
+
 fn parse_grid_template(css: &str) -> Vec<GridTemplateComponent<String>> {
     let css = css.trim();
     if css.is_empty() {
         return Vec::new();
     }
-    // Single component (may be repeat(...))
     if let Ok(c) = GridTemplateComponent::<String>::from_str(css) {
         return vec![c];
     }
-    // Split on whitespace at top level, then parse each token / repeat() group.
     let mut out = Vec::new();
     let mut token = String::new();
     let mut depth = 0usize;
@@ -309,7 +315,6 @@ fn parse_grid_template(css: &str) -> Vec<GridTemplateComponent<String>> {
     out
 }
 
-/// Parse CSS track sizing list (auto rows/columns): "auto 100px minmax(0, 1fr)"
 fn parse_auto_tracks(css: &str) -> Vec<TrackSizingFunction> {
     let css = css.trim();
     if css.is_empty() {
@@ -350,9 +355,7 @@ fn parse_auto_tracks(css: &str) -> Vec<TrackSizingFunction> {
     out
 }
 
-/// Parse CSS grid-template-areas.
-/// Accepts: `"a a" "b c"`  or  `a a / b c`
-fn parse_grid_areas(css: &str) -> Option<taffy::GridTemplateAreas<String>> {
+fn parse_grid_areas(css: &str) -> Option<GridTemplateAreas<String>> {
     let css = css.trim();
     if css.is_empty() {
         return None;
@@ -367,18 +370,17 @@ fn parse_grid_areas(css: &str) -> Option<taffy::GridTemplateAreas<String>> {
             .filter(|r: &Vec<String>| !r.is_empty())
             .collect()
     } else {
-        // quoted row strings: "a a" "b c"
         let mut rows = Vec::new();
-        let mut cur: Vec<String>;
-        let mut in_quote = false;
         let mut buf = String::new();
+        let mut in_quote = false;
         for ch in css.chars() {
             match ch {
                 '"' => {
                     if in_quote {
-                        cur = buf.split_whitespace().map(|s| s.to_string()).collect();
+                        let cur: Vec<String> =
+                            buf.split_whitespace().map(|s| s.to_string()).collect();
                         if !cur.is_empty() {
-                            rows.push(std::mem::take(&mut cur));
+                            rows.push(cur);
                         }
                         buf.clear();
                         in_quote = false;
@@ -398,9 +400,7 @@ fn parse_grid_areas(css: &str) -> Option<taffy::GridTemplateAreas<String>> {
     }
     let row_count = rows.len() as u16;
     let column_count = rows.iter().map(|r| r.len()).max().unwrap_or(0) as u16;
-
-    // Merge rectangular regions of identical names.
-    let mut areas: Vec<taffy::GridTemplateArea<String>> = Vec::new();
+    let mut areas: Vec<GridTemplateArea<String>> = Vec::new();
     let mut used = vec![vec![false; column_count as usize]; row_count as usize];
     for r in 0..row_count as usize {
         for c in 0..column_count as usize {
@@ -432,7 +432,7 @@ fn parse_grid_areas(css: &str) -> Option<taffy::GridTemplateAreas<String>> {
                     }
                 }
             }
-            areas.push(taffy::GridTemplateArea {
+            areas.push(GridTemplateArea {
                 name: name.clone(),
                 row_start: r as u16,
                 row_end: r_end as u16 + 1,
@@ -441,15 +441,13 @@ fn parse_grid_areas(css: &str) -> Option<taffy::GridTemplateAreas<String>> {
             });
         }
     }
-
-    Some(taffy::GridTemplateAreas {
+    Some(GridTemplateAreas {
         areas,
         row_count,
         column_count,
     })
 }
 
-/// Split "start end" into names for one track.
 fn parse_line_names(css: &str) -> Vec<String> {
     css.split_whitespace()
         .filter(|s| !s.is_empty())
@@ -457,248 +455,189 @@ fn parse_line_names(css: &str) -> Vec<String> {
         .collect()
 }
 
-fn parse_align_items(s: &str) -> AlignItems {
-    parse_or(s, AlignItems::NORMAL)
-}
+fn unsafe_style_to_taffy(s: &TaffyCStyle) -> Style {
+    unsafe {
+        let strf = cstr;
+        let dim = |p: *const c_char| parse_dim(strf(p));
+        let lp = |p: *const c_char| parse_lp(strf(p));
+        let lpa = |p: *const c_char| parse_lpa(strf(p));
 
-fn parse_align_content(s: &str) -> AlignContent {
-    parse_or(s, AlignContent::NORMAL)
-}
+        let mut grid_template_row_names = Vec::new();
+        if !s.grid_template_row_names.is_null() {
+            for i in 0..s.grid_template_row_names_len {
+                let p = *s.grid_template_row_names.add(i);
+                grid_template_row_names.push(parse_line_names(strf(p)));
+            }
+        }
+        let mut grid_template_column_names = Vec::new();
+        if !s.grid_template_column_names.is_null() {
+            for i in 0..s.grid_template_column_names_len {
+                let p = *s.grid_template_column_names.add(i);
+                grid_template_column_names.push(parse_line_names(strf(p)));
+            }
+        }
 
-/// Empty string or "auto" means unset (taffy Option::None).
-fn parse_optional_align(s: &str) -> Option<AlignItems> {
-    let s = s.trim();
-    if s.is_empty() || s == "auto" {
-        None
-    } else {
-        Some(parse_align_items(s))
+        Style {
+            display: parse_or_display(strf(s.display)),
+            item_is_table: s.item_is_table,
+            item_is_replaced: s.item_is_replaced,
+            item_is_compressible_replaced: s.item_is_compressible_replaced,
+            box_sizing: parse_or_box(strf(s.box_sizing)),
+            direction: parse_or_direction(strf(s.direction)),
+            overflow: TPoint {
+                x: parse_or_overflow(strf(s.overflow_x)),
+                y: parse_or_overflow(strf(s.overflow_y)),
+            },
+            scrollbar_width: s.scrollbar_width as f32,
+            contain: {
+                use taffy::style::Contain;
+                let mut c = Contain::NONE;
+                if s.contain & 1 != 0 {
+                    c = c.union(Contain::LAYOUT);
+                }
+                if s.contain & 2 != 0 {
+                    c = c.union(Contain::PAINT);
+                }
+                c
+            },
+            float: parse_or_float(strf(s.css_float)),
+            clear: parse_or_clear(strf(s.clear)),
+            position: parse_or_position(strf(s.position)),
+            inset: TRect {
+                left: lpa(s.inset_left),
+                right: lpa(s.inset_right),
+                top: lpa(s.inset_top),
+                bottom: lpa(s.inset_bottom),
+            },
+            size: TSize {
+                width: dim(s.size_width),
+                height: dim(s.size_height),
+            },
+            min_size: TSize {
+                width: lpa(s.min_size_width),
+                height: lpa(s.min_size_height),
+            },
+            max_size: TSize {
+                width: lpa(s.max_size_width),
+                height: lpa(s.max_size_height),
+            },
+            aspect_ratio: if s.aspect_ratio.is_nan() {
+                None
+            } else {
+                Some(s.aspect_ratio as f32)
+            },
+            margin: TRect {
+                left: lpa(s.margin_left),
+                right: lpa(s.margin_right),
+                top: lpa(s.margin_top),
+                bottom: lpa(s.margin_bottom),
+            },
+            padding: TRect {
+                left: lp(s.padding_left),
+                right: lp(s.padding_right),
+                top: lp(s.padding_top),
+                bottom: lp(s.padding_bottom),
+            },
+            border: TRect {
+                left: lp(s.border_left),
+                right: lp(s.border_right),
+                top: lp(s.border_top),
+                bottom: lp(s.border_bottom),
+            },
+            align_items: parse_align_items(strf(s.align_items)),
+            align_self: parse_optional_align(strf(s.align_self)),
+            justify_items: parse_align_items(strf(s.justify_items)),
+            justify_self: parse_optional_align(strf(s.justify_self)),
+            align_content: parse_align_content(strf(s.align_content)),
+            justify_content: parse_align_content(strf(s.justify_content)),
+            gap: TSize {
+                width: lp(s.gap_width),
+                height: lp(s.gap_height),
+            },
+            text_align: parse_or_text_align(strf(s.text_align)),
+            flex_direction: parse_or_flex_direction(strf(s.flex_direction)),
+            flex_wrap: parse_or_flex_wrap(strf(s.flex_wrap)),
+            flex_line_count: s.flex_line_count.max(1) as u16,
+            flex_basis: dim(s.flex_basis),
+            flex_grow: s.flex_grow as f32,
+            flex_shrink: s.flex_shrink as f32,
+            grid_auto_flow: parse_or_grid_flow(strf(s.grid_auto_flow)),
+            grid_template_rows: parse_grid_template(strf(s.grid_template_rows)),
+            grid_template_columns: parse_grid_template(strf(s.grid_template_columns)),
+            grid_auto_rows: parse_auto_tracks(strf(s.grid_auto_rows)),
+            grid_auto_columns: parse_auto_tracks(strf(s.grid_auto_columns)),
+            grid_template_areas: parse_grid_areas(strf(s.grid_template_areas)),
+            grid_template_row_names,
+            grid_template_column_names,
+            grid_row: Line {
+                start: parse_placement(strf(s.grid_row.start)),
+                end: parse_placement(strf(s.grid_row.end)),
+            },
+            grid_column: Line {
+                start: parse_placement(strf(s.grid_column.start)),
+                end: parse_placement(strf(s.grid_column.end)),
+            },
+            ..Style::DEFAULT
+        }
     }
 }
 
-fn to_taffy_style(s: &ffi::NodeStyle) -> Style {
-    let dim = |v: &str| parse_dim(v);
-    let size_dim = |sz: &ffi::LengthSize| TSize {
-        width: dim(&sz.width),
-        height: dim(&sz.height),
-    };
-    let size_lpa = |sz: &ffi::LengthSize| TSize {
-        width: parse_lpa(&sz.width),
-        height: parse_lpa(&sz.height),
-    };
-    let size_lp = |sz: &ffi::LengthSize| TSize {
-        width: parse_lp(&sz.width),
-        height: parse_lp(&sz.height),
-    };
-    let rect_lpa = |r: &ffi::LengthRect| TRect {
-        left: parse_lpa(&r.left),
-        right: parse_lpa(&r.right),
-        top: parse_lpa(&r.top),
-        bottom: parse_lpa(&r.bottom),
-    };
-    let rect_lp = |r: &ffi::LengthRect| TRect {
-        left: parse_lp(&r.left),
-        right: parse_lp(&r.right),
-        top: parse_lp(&r.top),
-        bottom: parse_lp(&r.bottom),
-    };
-
-    Style {
-        display: parse_or(&s.display, Display::Flex),
-        item_is_table: s.item_is_table,
-        item_is_replaced: s.item_is_replaced,
-        item_is_compressible_replaced: s.item_is_compressible_replaced,
-        box_sizing: parse_or(&s.box_sizing, BoxSizing::BorderBox),
-        direction: parse_or(&s.direction, Direction::Ltr),
-        overflow: TPoint {
-            x: parse_or(&s.overflow_x, Overflow::Visible),
-            y: parse_or(&s.overflow_y, Overflow::Visible),
-        },
-        scrollbar_width: s.scrollbar_width as f32,
-        contain: {
-            use taffy::style::Contain;
-            let mut c = Contain::NONE;
-            if s.contain & 1 != 0 {
-                c = c.union(Contain::LAYOUT);
-            }
-            if s.contain & 2 != 0 {
-                c = c.union(Contain::PAINT);
-            }
-            c
-        },
-        float: parse_or(&s.css_float, Float::None),
-        clear: parse_or(&s.clear, Clear::None),
-        position: parse_or(&s.position, Position::Static),
-        inset: rect_lpa(&s.inset),
-        size: size_dim(&s.size),
-        min_size: size_lpa(&s.min_size),
-        max_size: size_lpa(&s.max_size),
-        aspect_ratio: if s.aspect_ratio.is_nan() {
-            None
-        } else {
-            Some(s.aspect_ratio as f32)
-        },
-        margin: rect_lpa(&s.margin),
-        padding: rect_lp(&s.padding),
-        border: rect_lp(&s.border),
-        align_items: parse_align_items(&s.align_items),
-        align_self: parse_optional_align(&s.align_self),
-        justify_items: parse_align_items(&s.justify_items),
-        justify_self: parse_optional_align(&s.justify_self),
-        align_content: parse_align_content(&s.align_content),
-        justify_content: parse_align_content(&s.justify_content),
-        gap: size_lp(&s.gap),
-        text_align: parse_or(&s.text_align, TextAlign::Auto),
-        flex_direction: parse_or(&s.flex_direction, FlexDirection::Row),
-        flex_wrap: parse_or(&s.flex_wrap, FlexWrap::NoWrap),
-        flex_line_count: s.flex_line_count.max(1) as u16,
-        flex_basis: dim(&s.flex_basis),
-        flex_grow: s.flex_grow as f32,
-        flex_shrink: s.flex_shrink as f32,
-        grid_auto_flow: parse_or(&s.grid_auto_flow, GridAutoFlow::Row),
-        grid_template_rows: parse_grid_template(&s.grid_template_rows),
-        grid_template_columns: parse_grid_template(&s.grid_template_columns),
-        grid_auto_rows: parse_auto_tracks(&s.grid_auto_rows),
-        grid_auto_columns: parse_auto_tracks(&s.grid_auto_columns),
-        grid_template_areas: parse_grid_areas(&s.grid_template_areas),
-        grid_template_row_names: s
-            .grid_template_row_names
-            .iter()
-            .map(|n| parse_line_names(n))
-            .collect(),
-        grid_template_column_names: s
-            .grid_template_column_names
-            .iter()
-            .map(|n| parse_line_names(n))
-            .collect(),
-        grid_row: parse_line(&s.grid_row.start, &s.grid_row.end),
-        grid_column: parse_line(&s.grid_column.start, &s.grid_column.end),
-        ..Style::DEFAULT
-    }
+fn parse_or_display(s: &str) -> Display {
+    s.parse().unwrap_or(Display::Flex)
 }
+fn parse_or_box(s: &str) -> BoxSizing {
+    s.parse().unwrap_or(BoxSizing::BorderBox)
+}
+fn parse_or_direction(s: &str) -> Direction {
+    s.parse().unwrap_or(Direction::Ltr)
+}
+fn parse_or_overflow(s: &str) -> Overflow {
+    s.parse().unwrap_or(Overflow::Visible)
+}
+fn parse_or_float(s: &str) -> Float {
+    s.parse().unwrap_or(Float::None)
+}
+fn parse_or_clear(s: &str) -> Clear {
+    s.parse().unwrap_or(Clear::None)
+}
+fn parse_or_position(s: &str) -> Position {
+    s.parse().unwrap_or(Position::Static)
+}
+fn parse_or_text_align(s: &str) -> TextAlign {
+    s.parse().unwrap_or(TextAlign::Auto)
+}
+fn parse_or_flex_direction(s: &str) -> FlexDirection {
+    s.parse().unwrap_or(FlexDirection::Row)
+}
+fn parse_or_flex_wrap(s: &str) -> FlexWrap {
+    s.parse().unwrap_or(FlexWrap::NoWrap)
+}
+fn parse_or_grid_flow(s: &str) -> GridAutoFlow {
+    s.parse().unwrap_or(GridAutoFlow::Row)
+}
+
+// ---------------------------------------------------------------------------
+// Engine
+// ---------------------------------------------------------------------------
 
 pub struct TaffyEngine {
-    tree: TaffyTree<TSize<f32>>,
+    tree: TaffyTree,
     nodes: Vec<NodeId>,
 }
 
-/// Leaf measure: report the Qt content size stored on the node.
-/// Lets `align-items: center/start/end` size to content instead of 0.
-fn content_size_measure(
-    inputs: LayoutInput,
-    _node_id: NodeId,
-    node_context: Option<&mut TSize<f32>>,
-    style: &Style,
-) -> LayoutOutput {
-    compute_leaf_layout(
-        inputs,
-        style,
-        |_, _| 0.0,
-        |known_dimensions, _available_space| {
-            known_dimensions.unwrap_or(node_context.cloned().unwrap_or(TSize::ZERO))
-        },
-    )
-}
-
-fn engine_new() -> Box<TaffyEngine> {
-    Box::new(TaffyEngine {
-        tree: TaffyTree::new(),
-        nodes: Vec::new(),
-    })
-}
-
 impl TaffyEngine {
+    fn new() -> Self {
+        Self {
+            tree: TaffyTree::new(),
+            nodes: Vec::new(),
+        }
+    }
+
     fn node(&self, index: u32) -> Result<NodeId, String> {
         self.nodes
             .get(index as usize)
             .copied()
             .ok_or_else(|| format!("unknown node id {index}"))
-    }
-
-    fn engine_add_node(&mut self, style: &ffi::NodeStyle) -> u32 {
-        let tstyle = to_taffy_style(style);
-        let content = TSize {
-            width: style.measure_width as f32,
-            height: style.measure_height as f32,
-        };
-        let node = if content.width > 0.0 || content.height > 0.0 {
-            self.tree.new_leaf_with_context(tstyle, content).expect("new_leaf")
-        } else {
-            self.tree.new_leaf(tstyle).expect("new_leaf")
-        };
-        self.nodes.push(node);
-        (self.nodes.len() - 1) as u32
-    }
-
-    fn engine_add_child(&mut self, parent: u32, child: u32) -> Result<(), String> {
-        let p = self.node(parent)?;
-        let c = self.node(child)?;
-        self.tree.add_child(p, c).map_err(taffy_err)
-    }
-
-    fn engine_set_style(&mut self, node: u32, style: &ffi::NodeStyle) -> Result<(), String> {
-        let n = self.node(node)?;
-        self.tree.set_style(n, to_taffy_style(style)).map_err(taffy_err)
-    }
-
-    fn engine_compute(
-        &mut self,
-        width: &ffi::AvailableSpace,
-        height: &ffi::AvailableSpace,
-    ) -> Result<(), String> {
-        let Some(&root) = self.nodes.first() else {
-            return Ok(());
-        };
-        let avail = |v: &ffi::AvailableSpace| parse_available_space(&v.css);
-        let size = TSize {
-            width: avail(width),
-            height: avail(height),
-        };
-        self.tree
-            .compute_layout_with_measure(root, size, content_size_measure)
-            .map_err(taffy_err)
-    }
-
-    fn engine_layout(&self, node: u32) -> Result<ffi::Layout, String> {
-        let n = self.node(node)?;
-        let l = self.tree.layout(n).map_err(taffy_err)?;
-        Ok(ffi::Layout {
-            order: l.order,
-            location: ffi::Point {
-                x: l.location.x as f64,
-                y: l.location.y as f64,
-            },
-            size: ffi::Size {
-                width: l.size.width as f64,
-                height: l.size.height as f64,
-            },
-            border: ffi::Rect {
-                left: l.border.left as f64,
-                right: l.border.right as f64,
-                top: l.border.top as f64,
-                bottom: l.border.bottom as f64,
-            },
-            padding: ffi::Rect {
-                left: l.padding.left as f64,
-                right: l.padding.right as f64,
-                top: l.padding.top as f64,
-                bottom: l.padding.bottom as f64,
-            },
-            margin: ffi::Rect {
-                left: l.margin.left as f64,
-                right: l.margin.right as f64,
-                top: l.margin.top as f64,
-                bottom: l.margin.bottom as f64,
-            },
-            scrollbar_size: ffi::Size {
-                width: l.scrollbar_size.width as f64,
-                height: l.scrollbar_size.height as f64,
-            },
-        })
-    }
-
-    fn engine_clear(&mut self) {
-        self.tree = TaffyTree::new();
-        self.nodes.clear();
     }
 }
 
@@ -706,194 +645,184 @@ fn taffy_err(e: TaffyError) -> String {
     e.to_string()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use taffy::prelude::*;
-    use taffy::TaffyTree;
+// ---------------------------------------------------------------------------
+// extern "C" API
+// ---------------------------------------------------------------------------
 
-    #[test]
-    fn column_grow_with_basis_zero() {
-        let mut tree: TaffyTree<()> = TaffyTree::new();
-        let root = tree
-            .new_leaf(Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                size: Size {
-                    width: length(460.0),
-                    height: length(340.0),
-                },
-                ..Style::DEFAULT
-            })
-            .unwrap();
-        let bar = tree
-            .new_leaf(Style {
-                size: Size {
-                    width: Dimension::auto(),
-                    height: length(100.0),
-                },
-                ..Style::DEFAULT
-            })
-            .unwrap();
-        let inner = tree
-            .new_leaf(Style {
-                size: Size {
-                    width: Dimension::auto(),
-                    height: length(0.0),
-                },
-                flex_basis: length(0.0),
-                flex_grow: 1.0,
-                ..Style::DEFAULT
-            })
-            .unwrap();
-        tree.add_child(root, bar).unwrap();
-        tree.add_child(root, inner).unwrap();
-        tree.compute_layout(
-            root,
-            Size {
-                width: AvailableSpace::Definite(460.0),
-                height: AvailableSpace::Definite(340.0),
-            },
-        )
-        .unwrap();
-        let l = tree.layout(inner).unwrap();
-        println!("inner layout {}x{} at {},{}", l.size.width, l.size.height, l.location.x, l.location.y);
-        assert!(l.size.height > 100.0, "expected grow, got {}", l.size.height);
+/// Create engine. Returns NULL on failure.
+#[no_mangle]
+pub unsafe extern "C" fn taffy_engine_new() -> *mut TaffyEngine {
+    match catch_unwind(|| Box::new(TaffyEngine::new())) {
+        Ok(b) => Box::into_raw(b),
+        Err(_) => std::ptr::null_mut(),
     }
+}
 
-    #[test]
-    fn column_grow_with_size_auto_basis_pct() {
-        let mut tree: TaffyTree<()> = TaffyTree::new();
-        let root = tree
-            .new_leaf(Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                size: Size {
-                    width: length(460.0),
-                    height: length(340.0),
-                },
-                ..Style::DEFAULT
-            })
-            .unwrap();
-        let bar = tree
-            .new_leaf(Style {
-                size: Size {
-                    width: Dimension::auto(),
-                    height: length(100.0),
-                },
-                ..Style::DEFAULT
-            })
-            .unwrap();
-        let inner = tree
-            .new_leaf(Style {
-                size: Size {
-                    width: Dimension::auto(),
-                    height: Dimension::auto(),
-                },
-                flex_basis: percent(0.0),
-                flex_grow: 1.0,
-                ..Style::DEFAULT
-            })
-            .unwrap();
-        tree.add_child(root, bar).unwrap();
-        tree.add_child(root, inner).unwrap();
-        tree.compute_layout(
-            root,
-            Size {
-                width: AvailableSpace::Definite(460.0),
-                height: AvailableSpace::Definite(340.0),
-            },
-        )
-        .unwrap();
-        let l = tree.layout(inner).unwrap();
-        println!("inner2 layout {}x{}", l.size.width, l.size.height);
-        assert!(l.size.height > 100.0, "expected grow, got {}", l.size.height);
+/// Destroy engine. NULL is a no-op.
+#[no_mangle]
+pub unsafe extern "C" fn taffy_engine_delete(engine: *mut TaffyEngine) {
+    if !engine.is_null() {
+        drop(Box::from_raw(engine));
     }
+}
 
-    /// align-items: center + cross-axis auto must shrink to content size,
-    /// not collapse to 0 (the Button-text-disappears bug).
-    #[test]
-    fn align_center_keeps_content_size() {
-        let mut tree: TaffyTree<Size<f32>> = TaffyTree::new();
-        let root = tree
-            .new_leaf(Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::CENTER,
-                size: Size {
-                    width: length(400.0),
-                    height: length(300.0),
-                },
-                ..Style::DEFAULT
-            })
-            .unwrap();
-        // Leaf: width auto (cross), height fixed. Content size 80x20 (e.g. Button).
-        let child = tree
-            .new_leaf_with_context(
-                Style {
-                    size: Size {
-                        width: Dimension::auto(),
-                        height: length(20.0),
-                    },
-                    ..Style::DEFAULT
-                },
-                Size { width: 80.0, height: 20.0 },
-            )
-            .unwrap();
-        tree.add_child(root, child).unwrap();
-        tree.compute_layout_with_measure(
-            root,
-            Size {
-                width: AvailableSpace::Definite(400.0),
-                height: AvailableSpace::Definite(300.0),
-            },
-            content_size_measure,
-        )
-        .unwrap();
-        let l = tree.layout(child).unwrap();
-        assert!((l.size.width - 80.0).abs() < 0.1, "width should be content 80, got {}", l.size.width);
-        assert!((l.size.height - 20.0).abs() < 0.1, "height should be 20, got {}", l.size.height);
+/// Add node; returns node id (u32::MAX on error).
+#[no_mangle]
+pub unsafe extern "C" fn taffy_engine_add_node(
+    engine: *mut TaffyEngine,
+    style: *const TaffyCStyle,
+) -> u32 {
+    if engine.is_null() {
+        return u32::MAX;
     }
+    let eng = &mut *engine;
+    let style = if style.is_null() {
+        Style::DEFAULT
+    } else {
+        unsafe_style_to_taffy(&*style)
+    };
+    match catch_unwind(AssertUnwindSafe(|| eng.tree.new_leaf(style))) {
+        Ok(Ok(node)) => {
+            eng.nodes.push(node);
+            (eng.nodes.len() - 1) as u32
+        }
+        _ => u32::MAX,
+    }
+}
 
-    /// Same leaf with align-items: stretch must fill the container cross axis.
-    #[test]
-    fn align_stretch_fills_cross_axis() {
-        let mut tree: TaffyTree<Size<f32>> = TaffyTree::new();
-        let root = tree
-            .new_leaf(Style {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::STRETCH,
-                size: Size {
-                    width: length(400.0),
-                    height: length(300.0),
-                },
-                ..Style::DEFAULT
-            })
-            .unwrap();
-        let child = tree
-            .new_leaf_with_context(
-                Style {
-                    size: Size {
-                        width: Dimension::auto(),
-                        height: length(20.0),
-                    },
-                    ..Style::DEFAULT
-                },
-                Size { width: 80.0, height: 20.0 },
-            )
-            .unwrap();
-        tree.add_child(root, child).unwrap();
-        tree.compute_layout_with_measure(
-            root,
-            Size {
-                width: AvailableSpace::Definite(400.0),
-                height: AvailableSpace::Definite(300.0),
-            },
-            content_size_measure,
-        )
-        .unwrap();
-        let l = tree.layout(child).unwrap();
-        assert!((l.size.width - 400.0).abs() < 0.1, "stretch width should be 400, got {}", l.size.width);
+/// 0 = ok, 1 = error.
+#[no_mangle]
+pub unsafe extern "C" fn taffy_engine_add_child(
+    engine: *mut TaffyEngine,
+    parent: u32,
+    child: u32,
+) -> i32 {
+    if engine.is_null() {
+        return 1;
     }
+    let eng = &mut *engine;
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let p = eng.node(parent).map_err(|e| e)?;
+        let c = eng.node(child).map_err(|e| e)?;
+        eng.tree.add_child(p, c).map_err(taffy_err)
+    }));
+    match result {
+        Ok(Ok(())) => 0,
+        _ => 1,
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn taffy_engine_set_style(
+    engine: *mut TaffyEngine,
+    node: u32,
+    style: *const TaffyCStyle,
+) -> i32 {
+    if engine.is_null() || style.is_null() {
+        return 1;
+    }
+    let eng = &mut *engine;
+    let style = unsafe_style_to_taffy(&*style);
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let n = eng.node(node).map_err(|e| e)?;
+        eng.tree.set_style(n, style).map_err(taffy_err)
+    }));
+    match result {
+        Ok(Ok(())) => 0,
+        _ => 1,
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn taffy_engine_compute(
+    engine: *mut TaffyEngine,
+    width_css: *const c_char,
+    height_css: *const c_char,
+) -> i32 {
+    if engine.is_null() {
+        return 1;
+    }
+    let eng = &mut *engine;
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let Some(&root) = eng.nodes.first() else {
+            return Ok(());
+        };
+        let size = TSize {
+            width: parse_available_space(cstr(width_css)),
+            height: parse_available_space(cstr(height_css)),
+        };
+        eng.tree.compute_layout(root, size).map_err(taffy_err)
+    }));
+    match result {
+        Ok(Ok(())) => 0,
+        _ => 1,
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn taffy_engine_layout(
+    engine: *const TaffyEngine,
+    node: u32,
+    out: *mut TaffyCLayout,
+) -> i32 {
+    if engine.is_null() || out.is_null() {
+        return 1;
+    }
+    let eng = &*engine;
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let n = eng.node(node).map_err(|e| e)?;
+        eng.tree.layout(n).map(|l| {
+            let o = TaffyCLayout {
+                order: l.order,
+                location: TaffyCPoint {
+                    x: l.location.x as f64,
+                    y: l.location.y as f64,
+                },
+                size: TaffyCSize {
+                    width: l.size.width as f64,
+                    height: l.size.height as f64,
+                },
+                border: TaffyCRect {
+                    left: l.border.left as f64,
+                    right: l.border.right as f64,
+                    top: l.border.top as f64,
+                    bottom: l.border.bottom as f64,
+                },
+                padding: TaffyCRect {
+                    left: l.padding.left as f64,
+                    right: l.padding.right as f64,
+                    top: l.padding.top as f64,
+                    bottom: l.padding.bottom as f64,
+                },
+                margin: TaffyCRect {
+                    left: l.margin.left as f64,
+                    right: l.margin.right as f64,
+                    top: l.margin.top as f64,
+                    bottom: l.margin.bottom as f64,
+                },
+                scrollbar_size: TaffyCSize {
+                    width: l.scrollbar_size.width as f64,
+                    height: l.scrollbar_size.height as f64,
+                },
+            };
+            *out = o;
+        })
+        .map_err(taffy_err)
+    }));
+    match result {
+        Ok(Ok(())) => 0,
+        _ => 1,
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn taffy_engine_clear(engine: *mut TaffyEngine) {
+    if engine.is_null() {
+        return;
+    }
+    let eng = &mut *engine;
+    let _ = catch_unwind(AssertUnwindSafe(|| {
+        eng.tree = TaffyTree::new();
+        eng.nodes.clear();
+    }));
 }

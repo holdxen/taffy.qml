@@ -3,15 +3,10 @@ name = "taffy_rust"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "taffy layout engine exported to C++ via cxx; CSS-like string style API"
+description = "taffy layout engine exported via plain C ABI (no cxx)"
 
 [lib]
 crate-type = ["staticlib"]
 
 [dependencies]
-cxx = "1.0"
-# parse = FromStr for CSS keywords / dimensions
-taffy = { version = "0.15.1", features = ["parse"] }
-
-[build-dependencies]
-cxx-build = "1.0"
+taffy = { version = "0.15.0", features = ["parse"] }
