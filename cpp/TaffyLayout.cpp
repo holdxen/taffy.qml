@@ -631,6 +631,13 @@ void TaffyLayout::updateLayoutItems()
     invalidate();
 }
 
+void TaffyLayout::relayout()
+{
+    invalidate();
+    if (isReady() && width() > 0 && height() > 0)
+        rearrange(QSizeF(width(), height()));
+}
+
 void TaffyLayout::checkItemAnchors(QQuickItem* item)
 {
     if (!item) {

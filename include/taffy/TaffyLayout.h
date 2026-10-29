@@ -115,6 +115,11 @@ public:
     QString direction() const;
     void setDirection(const QString& v);
 
+public slots:
+    /** Drop cached size hints and re-run layout with the current size. */
+    void relayout();
+
+public:
     void componentComplete() override;
     void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
     void invalidate(QQuickItem* childItem = nullptr) override;
