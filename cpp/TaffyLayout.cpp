@@ -658,6 +658,14 @@ void TaffyLayout::itemSiblingOrderChanged(QQuickItem* item)
     invalidate(item);
 }
 
+void TaffyLayout::itemVisibilityChanged(QQuickItem* item)
+{
+    Q_UNUSED(item);
+    // Base is empty; hidden children are skipped by shouldIgnoreItem, so
+    // toggle them out of / into the flex flow.
+    relayout();
+}
+
 void TaffyLayout::geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry)
 {
     QQuickLayout::geometryChange(newGeometry, oldGeometry);

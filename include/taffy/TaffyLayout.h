@@ -137,6 +137,7 @@ signals:
 public:
     void itemChange(ItemChange change, const ItemChangeData& value) override;
     void itemSiblingOrderChanged(QQuickItem* item) override;
+    void itemVisibilityChanged(QQuickItem* item) override;
 
 private:
     Q_DECLARE_PRIVATE(TaffyLayout)
