@@ -6,6 +6,7 @@ use std::ffi::{c_char, CStr};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::str::FromStr;
 
+use taffy::compute::compute_leaf_layout;
 use taffy::geometry::{Line, Point as TPoint, Rect as TRect, Size as TSize};
 use taffy::prelude::{
     AlignContent, AlignItems, AvailableSpace as TAvailableSpace, BoxSizing, Dimension, Display,
@@ -13,7 +14,7 @@ use taffy::prelude::{
 };
 use taffy::style::{Clear, Direction, Float, GridAutoFlow, Overflow, TextAlign};
 use taffy::style_helpers::{length, percent};
-use taffy::tree::TaffyError;
+use taffy::tree::{LayoutInput, LayoutOutput, TaffyError};
 use taffy::TaffyTree;
 use taffy::{GridPlacement, GridTemplateArea, GridTemplateAreas, GridTemplateComponent, TrackSizingFunction};
 
@@ -621,8 +622,26 @@ fn parse_or_grid_flow(s: &str) -> GridAutoFlow {
 // ---------------------------------------------------------------------------
 
 pub struct TaffyEngine {
-    tree: TaffyTree,
+    tree: TaffyTree<TSize<f32>>,
     nodes: Vec<NodeId>,
+}
+
+/// Leaf measure: report the Qt content size stored on the node context.
+/// Lets auto cross-axis sizes use content instead of collapsing to 0.
+fn content_size_measure(
+    inputs: LayoutInput,
+    _node_id: NodeId,
+    node_context: Option<&mut TSize<f32>>,
+    style: &Style,
+) -> LayoutOutput {
+    compute_leaf_layout(
+        inputs,
+        style,
+        |_, _| 0.0,
+        |known_dimensions, _available_space| {
+            known_dimensions.unwrap_or(node_context.cloned().unwrap_or(TSize::ZERO))
+        },
+    )
 }
 
 impl TaffyEngine {
@@ -676,12 +695,23 @@ pub unsafe extern "C" fn taffy_engine_add_node(
         return u32::MAX;
     }
     let eng = &mut *engine;
-    let style = if style.is_null() {
-        Style::DEFAULT
+    let (style, measure) = if style.is_null() {
+        (Style::DEFAULT, TSize::ZERO)
     } else {
-        unsafe_style_to_taffy(&*style)
+        let c = &*style;
+        let measure = TSize {
+            width: c.measure_width as f32,
+            height: c.measure_height as f32,
+        };
+        (unsafe_style_to_taffy(c), measure)
     };
-    match catch_unwind(AssertUnwindSafe(|| eng.tree.new_leaf(style))) {
+    match catch_unwind(AssertUnwindSafe(|| {
+        if measure.width > 0.0 || measure.height > 0.0 {
+            eng.tree.new_leaf_with_context(style, measure)
+        } else {
+            eng.tree.new_leaf(style)
+        }
+    })) {
         Ok(Ok(node)) => {
             eng.nodes.push(node);
             (eng.nodes.len() - 1) as u32
@@ -751,7 +781,9 @@ pub unsafe extern "C" fn taffy_engine_compute(
             width: parse_available_space(cstr(width_css)),
             height: parse_available_space(cstr(height_css)),
         };
-        eng.tree.compute_layout(root, size).map_err(taffy_err)
+        eng.tree
+            .compute_layout_with_measure(root, size, content_size_measure)
+            .map_err(taffy_err)
     }));
     match result {
         Ok(Ok(())) => 0,
@@ -825,4 +857,157 @@ pub unsafe extern "C" fn taffy_engine_clear(engine: *mut TaffyEngine) {
         eng.tree = TaffyTree::new();
         eng.nodes.clear();
     }));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use taffy::prelude::*;
+
+    /// align-items: center + cross-axis auto must shrink to content size,
+    /// not collapse to 0 (the Button-text-disappears bug).
+    #[test]
+    fn align_center_keeps_content_size() {
+        let mut tree: TaffyTree<Size<f32>> = TaffyTree::new();
+        let root = tree
+            .new_leaf(Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::CENTER,
+                size: Size {
+                    width: length(400.0),
+                    height: length(300.0),
+                },
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        let child = tree
+            .new_leaf_with_context(
+                Style {
+                    size: Size {
+                        width: Dimension::auto(),
+                        height: length(20.0),
+                    },
+                    ..Style::DEFAULT
+                },
+                Size { width: 80.0, height: 20.0 },
+            )
+            .unwrap();
+        tree.add_child(root, child).unwrap();
+        tree.compute_layout_with_measure(
+            root,
+            Size {
+                width: AvailableSpace::Definite(400.0),
+                height: AvailableSpace::Definite(300.0),
+            },
+            content_size_measure,
+        )
+        .unwrap();
+        let l = tree.layout(child).unwrap();
+        assert!(
+            (l.size.width - 80.0).abs() < 0.1,
+            "width should be content 80, got {}",
+            l.size.width
+        );
+        assert!(
+            (l.size.height - 20.0).abs() < 0.1,
+            "height should be 20, got {}",
+            l.size.height
+        );
+    }
+
+    /// Same leaf with align-items: stretch must fill the container cross axis.
+    #[test]
+    fn align_stretch_fills_cross_axis() {
+        let mut tree: TaffyTree<Size<f32>> = TaffyTree::new();
+        let root = tree
+            .new_leaf(Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::STRETCH,
+                size: Size {
+                    width: length(400.0),
+                    height: length(300.0),
+                },
+                ..Style::DEFAULT
+            })
+            .unwrap();
+        let child = tree
+            .new_leaf_with_context(
+                Style {
+                    size: Size {
+                        width: Dimension::auto(),
+                        height: length(20.0),
+                    },
+                    ..Style::DEFAULT
+                },
+                Size { width: 80.0, height: 20.0 },
+            )
+            .unwrap();
+        tree.add_child(root, child).unwrap();
+        tree.compute_layout_with_measure(
+            root,
+            Size {
+                width: AvailableSpace::Definite(400.0),
+                height: AvailableSpace::Definite(300.0),
+            },
+            content_size_measure,
+        )
+        .unwrap();
+        let l = tree.layout(child).unwrap();
+        assert!(
+            (l.size.width - 400.0).abs() < 0.1,
+            "stretch width should be 400, got {}",
+            l.size.width
+        );
+    }
+
+    /// C ABI: measure_width/height on the style must become leaf context.
+    #[test]
+    fn c_abi_measure_fields_are_applied() {
+        let display = std::ffi::CString::new("flex").unwrap();
+        let flex_dir = std::ffi::CString::new("column").unwrap();
+        let flex_start = std::ffi::CString::new("flex-start").unwrap();
+        let auto = std::ffi::CString::new("auto").unwrap();
+        let forty = std::ffi::CString::new("400px").unwrap();
+        let three = std::ffi::CString::new("300px").unwrap();
+
+        let mut eng = TaffyEngine::new();
+        let root = {
+            let style = TaffyCStyle {
+                display: display.as_ptr(),
+                flex_direction: flex_dir.as_ptr(),
+                align_items: flex_start.as_ptr(),
+                size_width: forty.as_ptr(),
+                size_height: three.as_ptr(),
+                ..unsafe { std::mem::zeroed() }
+            };
+            unsafe { taffy_engine_add_node(&mut eng, &style) }
+        };
+        let leaf = {
+            let style = TaffyCStyle {
+                size_width: auto.as_ptr(),
+                size_height: auto.as_ptr(),
+                measure_width: 80.0,
+                measure_height: 20.0,
+                ..unsafe { std::mem::zeroed() }
+            };
+            unsafe { taffy_engine_add_node(&mut eng, &style) }
+        };
+        assert_eq!(unsafe { taffy_engine_add_child(&mut eng, root, leaf) }, 0);
+        assert_eq!(unsafe { taffy_engine_compute(&mut eng, forty.as_ptr(), three.as_ptr()) }, 0);
+        let mut out = std::mem::MaybeUninit::<TaffyCLayout>::uninit();
+        assert_eq!(unsafe { taffy_engine_layout(&eng, leaf, out.as_mut_ptr()) }, 0);
+        let out = unsafe { out.assume_init() };
+        assert!(
+            (out.size.width - 80.0).abs() < 0.1,
+            "leaf width should be measure 80, got {}",
+            out.size.width
+        );
+        assert!(
+            (out.size.height - 20.0).abs() < 0.1,
+            "leaf height should be measure 20, got {}",
+            out.size.height
+        );
+    }
 }
