@@ -768,20 +768,26 @@ QSizeF TaffyLayout::sizeHint(Qt::SizeHint whichSizeHint) const
         return m_cachedSizeHints[idx];
     }
 
-    const int n = itemCount();
-    for (int i = 0; i < n; ++i) {
-        watchItemStyle(itemAt(i));
-        checkItemAnchors(itemAt(i));
+    QList<QQuickItem*> children;
+    for (QQuickItem* child : childItems()) {
+        if (!shouldIgnoreItem(child)) {
+            children.append(child);
+            checkItemAnchors(child);
+        }
     }
+    const int n = children.size();
+    QList<taffy::Style> childStyles;
+    childStyles.reserve(n);
+    for (QQuickItem* child : children)
+        childStyles.append(itemStyle(child));
 
     // Fill all three hints so the cache is complete.
     static const Qt::SizeHint kAll[] = { Qt::MinimumSize, Qt::PreferredSize, Qt::MaximumSize };
     for (Qt::SizeHint which : kAll) {
         m_engine.clear();
         const std::uint32_t r = m_engine.addNode(containerStyle(QSizeF()));
-        for (int i = 0; i < n; ++i) {
-            QQuickItem* child = itemAt(i);
-            const std::uint32_t node = m_engine.addNode(itemStyle(child));
+        for (const taffy::Style& style : childStyles) {
+            const std::uint32_t node = m_engine.addNode(style);
             m_engine.addChild(r, node);
         }
 
@@ -826,10 +832,11 @@ void TaffyLayout::rearrange(const QSizeF& size)
     const std::uint32_t root = m_engine.addNode(containerStyle(size));
 
     QList<QQuickItem*> layoutItems;
-    const int n = itemCount();
-    for (int i = 0; i < n; ++i) {
-        QQuickItem* child = itemAt(i);
-        layoutItems.append(child);
+    for (QQuickItem* child : childItems()) {
+        if (!shouldIgnoreItem(child))
+            layoutItems.append(child);
+    }
+    for (QQuickItem* child : layoutItems) {
         const std::uint32_t node = m_engine.addNode(itemStyle(child));
         m_engine.addChild(root, node);
     }
