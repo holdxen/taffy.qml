@@ -142,6 +142,10 @@ int main(int argc, char* argv[])
 | `itemIsCompressibleReplaced` | `bool` | `false` | |
 | `taffyStyle` | `var`（`QVariantMap`） | — | 只读调试快照 |
 
+### 内在尺寸
+
+**不支持 `min-content` 尺寸语义。** 布局引擎依据 Qt Quick 子项的 size hint 测量，不会计算 CSS 定义的、依赖内容的最小尺寸。因此不要依赖文本换行或 Flex 子项收缩时的 `min-content` 行为。
+
 ### 长度写法
 
 | 示例 | 含义 |

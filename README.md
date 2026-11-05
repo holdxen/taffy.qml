@@ -141,6 +141,10 @@ Set on **children** of `TaffyLayout`. Notify via `itemStyleChanged`.
 | `itemIsCompressibleReplaced` | `bool` | `false` | |
 | `taffyStyle` | `var` (`QVariantMap`) | — | read-only debug snapshot |
 
+### Intrinsic sizing
+
+`min-content` sizing is not supported. The layout engine measures Qt Quick items from their size hints and does not compute the content-dependent minimum size defined by CSS. Do not rely on `min-content` behavior for text wrapping or flex-item shrink limits.
+
 ### Length syntax
 
 | Example | Meaning |
